@@ -24,14 +24,14 @@ import {Auth} from "./utils/Auth.sol";
 // attester: 0x4200000000000000000000000000000000000021 // base mainnet
 
 interface AttestationService {
-    function getAttestation(bytes32 uid) external view returns (Attestation memory);
+    function getAttestation(bytes32 uid) external view returns (CountryAttestation memory);
 }
 
 interface AttestationIndexer {
     function getAttestationUid(address recipient, bytes32 schemaUid) external returns (bytes32);
 }
 
-struct Attestation {
+struct CountryAttestation {
     bytes32 schema; // The unique identifier of the schema.
     address recipient; // The recipient of the attestation..
     bool revocable; // Whether the attestation is revocable.
@@ -129,7 +129,7 @@ contract USDCWrapper is ERC20, Auth {
 
     function isAttested(address user) public returns (bool attested) {
         bytes32 attestationUid = indexer.getAttestationUid(user, schemaUid);
-        Attestation memory attestation = attestationService.getAttestation(attestationUid);
+        CountryAttestation memory attestation = attestationService.getAttestation(attestationUid);
         attested = (keccak256(abi.encodePacked((attestation.verifiedCountry))) != keccak256(abi.encodePacked(("US"))));
     }
 
