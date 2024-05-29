@@ -51,7 +51,7 @@ contract USDCWrapper is ERC20, Auth {
     AttestationIndexer indexer;
 
     modifier onlyAttested() {
-        require(isAttested(msg.sender));
+        require(isAttested(_msgSender()));
         _;
     }
 
