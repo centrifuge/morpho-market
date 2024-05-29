@@ -114,14 +114,16 @@ contract USDCWrapper is ERC20, Auth {
         return true;
     }
 
-    function transferFrom(address from, address to, uint256 value) public override onlyAttested returns (bool) {
+    function transferFrom(address from, address to, uint256 value) public override returns (bool) {
+        require(isAttested(to));
         address spender = _msgSender();
         _spendAllowance(from, spender, value);
         _transfer(from, to, value);
         return true;
     }
 
-    function transfer(address to, uint256 value) public override onlyAttested returns (bool) {
+    function transfer(address to, uint256 value) public override returns (bool) {
+        require(isAttested(to));
         address owner = _msgSender();
         _transfer(owner, to, value);
         return true;
