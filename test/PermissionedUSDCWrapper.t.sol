@@ -10,7 +10,7 @@ contract PermissionedUSDCWrapperTest is Test {
 
     function setUp() public {
         ERC20 token = new ERC20("TEST", "TEST");
-        wrapper = new PermissionedUSDCWrapper("WTEST", "WTEST", token);
+        wrapper = new PermissionedUSDCWrapper("WTEST", "WTEST", token, address(0), address(1));
     }
 
     function testWrap() public {}

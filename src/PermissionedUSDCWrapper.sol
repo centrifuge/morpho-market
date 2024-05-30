@@ -4,6 +4,7 @@
 pragma solidity ^0.8.20;
 
 import {IERC20, IERC20Metadata, ERC20} from "./ERC20.sol";
+import {ERC20PermissionedBase} from "lib/erc20-permissioned/src/ERC20PermissionedBase.sol";
 import {SafeERC20} from "./SafeERC20.sol";
 import {Auth} from "./utils/Auth.sol";
 
@@ -38,14 +39,11 @@ struct CountryAttestation {
     string verifiedCountry; // Custom attestation data.
 }
 
-contract PermissionedUSDCWrapper is ERC20, Auth {
+contract PermissionedUSDCWrapper is ERC20PermissionedBase, Auth {
     IERC20 private immutable _underlying;
-    bytes32 schemaUid = 0x1801901fabd0e6189356b4fb52bb0ab855276d84f7ec140839fbd1f6801ca065; // verified country schema
-
-    /**
-     * @dev The underlying token couldn't be wrapped.
-     */
-    error ERC20InvalidUnderlying(address token);
+    
+     // verified country schema
+    bytes32 schemaUid = 0x1801901fabd0e6189356b4fb52bb0ab855276d84f7ec140839fbd1f6801ca065;
 
     AttestationService attestationService;
     AttestationIndexer indexer;
@@ -55,7 +53,7 @@ contract PermissionedUSDCWrapper is ERC20, Auth {
         _;
     }
 
-    constructor(string memory name_, string memory symbol_, IERC20 underlyingToken) ERC20(name_, symbol_) {
+    constructor(string memory name_, string memory symbol_, IERC20 underlyingToken, address morpho, address bundler) ERC20PermissionedBase(name_, symbol_, underlyingToken, morpho, bundler) {
         if (underlyingToken == this) {
             revert ERC20InvalidUnderlying(address(this));
         }
@@ -80,16 +78,9 @@ contract PermissionedUSDCWrapper is ERC20, Auth {
     }
 
     /**
-     * @dev Returns the address of the underlying ERC-20 token that is being wrapped.
-     */
-    function underlying() public view returns (IERC20) {
-        return _underlying;
-    }
-
-    /**
      * @dev Allow a user to deposit underlying tokens and mint the corresponding number of wrapped tokens.
      */
-    function depositFor(address account, uint256 value) public virtual onlyAttested returns (bool) {
+    function depositFor(address account, uint256 value) public override onlyAttested returns (bool) {
         address sender = _msgSender();
         if (sender == address(this)) {
             revert ERC20InvalidSender(address(this));
@@ -105,7 +96,7 @@ contract PermissionedUSDCWrapper is ERC20, Auth {
     /**
      * @dev Allow a user to burn a number of wrapped tokens and withdraw the corresponding number of underlying tokens.
      */
-    function withdrawTo(address account, uint256 value) public virtual onlyAttested returns (bool) {
+    function withdrawTo(address account, uint256 value) public override onlyAttested returns (bool) {
         if (account == address(this)) {
             revert ERC20InvalidReceiver(account);
         }
@@ -139,7 +130,7 @@ contract PermissionedUSDCWrapper is ERC20, Auth {
      * @dev Mint wrapped token to cover any underlyingTokens that would have been transferred by mistake or acquired from
      * rebasing mechanisms. Internal function that can be exposed with access control if desired.
      */
-    function _recover(address account) internal virtual returns (uint256) {
+    function _recover(address account) internal override returns (uint256) {
         uint256 value = _underlying.balanceOf(address(this)) - totalSupply();
         _mint(account, value);
         return value;
