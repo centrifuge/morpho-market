@@ -38,7 +38,7 @@ struct CountryAttestation {
     string verifiedCountry; // Custom attestation data.
 }
 
-contract USDCWrapper is ERC20, Auth {
+contract PermissionedUSDCWrapper is ERC20, Auth {
     IERC20 private immutable _underlying;
     bytes32 schemaUid = 0x1801901fabd0e6189356b4fb52bb0ab855276d84f7ec140839fbd1f6801ca065; // verified country schema
 

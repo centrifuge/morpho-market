@@ -2,8 +2,8 @@
 pragma solidity ^0.8.13;
 
 import {Test, console2} from "forge-std/Test.sol";
-import {USDCWrapper} from "../src/USDCWrapper.sol";
-import {ERC20} from "../src/ERC20.sol";
+import {PermissionedUSDCWrapper} from "src/PermissionedUSDCWrapper.sol";
+import {ERC20} from "src/ERC20.sol";
 
 contract USDCWrapperTest is Test {
     USDCWrapper wrapper;
