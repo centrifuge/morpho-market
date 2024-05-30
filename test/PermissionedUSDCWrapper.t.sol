@@ -5,12 +5,12 @@ import {Test, console2} from "forge-std/Test.sol";
 import {PermissionedUSDCWrapper} from "src/PermissionedUSDCWrapper.sol";
 import {ERC20} from "src/ERC20.sol";
 
-contract USDCWrapperTest is Test {
-    USDCWrapper wrapper;
+contract PermissionedUSDCWrapperTest is Test {
+    PermissionedUSDCWrapper wrapper;
 
     function setUp() public {
         ERC20 token = new ERC20("TEST", "TEST");
-        wrapper = new USDCWrapper("WTEST", "WTEST", token);
+        wrapper = new PermissionedUSDCWrapper("WTEST", "WTEST", token);
     }
 
     function testWrap() public {}
