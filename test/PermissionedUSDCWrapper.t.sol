@@ -34,18 +34,55 @@ contract PermissionedUSDCWrapperTest is Test {
     }
 
     function testWrap() public {
-        vm.prank(userUS);
-        vm.expectRevert("USDCWrapper: no permission");
-        wrapper.depositFor(userUS, 100);
-
-        vm.prank(userNoCountryAttestation);
-        vm.expectRevert("USDCWrapper: no attestation found");
-        wrapper.depositFor(userNoCountryAttestation, 100);
-
         deal(address(token), userNonUS, 100);
         vm.startPrank(userNonUS);
         token.approve(address(wrapper), 100);
         wrapper.depositFor(userNonUS, 100);
         assertEq(wrapper.balanceOf(userNonUS), 100);
+        assertEq(token.balanceOf(address(wrapper)), 100);
+    }
+
+    function testWrapToUSUserFails() public {
+        deal(address(token), userUS, 100);
+        vm.startPrank(userUS);
+        token.approve(address(wrapper), 100);
+        vm.expectRevert("USDCWrapper: no permission");
+        wrapper.depositFor(userUS, 100);
+    }
+
+    function testWrapToUnattestedUserFails() public {
+        deal(address(token), userNoCountryAttestation, 100);
+        vm.startPrank(userNoCountryAttestation);
+        token.approve(address(wrapper), 100);
+        vm.expectRevert("USDCWrapper: no attestation found");
+        wrapper.depositFor(userNoCountryAttestation, 100);
+    }
+
+    function testUnwrap() public {
+        deal(address(wrapper), userNonUS, 100);
+        deal(address(token), address(wrapper), 100);
+        vm.startPrank(userNonUS);
+        wrapper.approve(address(wrapper), 100);
+        wrapper.withdrawTo(userNonUS, 100);
+        assertEq(wrapper.balanceOf(userNonUS), 0);
+        assertEq(token.balanceOf(userNonUS), 100);
+    }
+
+    function testUnwrapToUSUserFails() public {
+        deal(address(wrapper), userNonUS, 100);
+        deal(address(token), address(wrapper), 100);
+        vm.startPrank(userUS);
+        wrapper.approve(address(wrapper), 100);
+        vm.expectRevert("USDCWrapper: no permission");
+        wrapper.withdrawTo(userUS, 100);
+    }
+
+    function testUnwrapToUnattestedUserFails() public {
+        deal(address(wrapper), userNonUS, 100);
+        deal(address(token), address(wrapper), 100);
+        vm.startPrank(userNoCountryAttestation);
+        wrapper.approve(address(wrapper), 100);
+        vm.expectRevert("USDCWrapper: no attestation found");
+        wrapper.withdrawTo(userNoCountryAttestation, 100);
     }
 }
