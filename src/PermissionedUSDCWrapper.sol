@@ -61,8 +61,8 @@ contract PermissionedUSDCWrapper is ERC20PermissionedBase, Auth {
     AttestationService public attestationService;
     AttestationIndexer public indexer;
 
-    modifier onlyAttested() {
-        require(hasPermission(_msgSender()));
+    modifier onlyPermissioned() {
+        require(hasPermission(_msgSender()), "USDCWrapper: no permission");
         _;
     }
 
@@ -98,7 +98,7 @@ contract PermissionedUSDCWrapper is ERC20PermissionedBase, Auth {
     /**
      * @dev Allow a user to deposit underlying tokens and mint the corresponding number of wrapped tokens.
      */
-    function depositFor(address account, uint256 value) public override onlyAttested returns (bool) {
+    function depositFor(address account, uint256 value) public override onlyPermissioned returns (bool) {
         address sender = _msgSender();
         if (sender == address(this)) {
             revert ERC20InvalidSender(address(this));
@@ -114,7 +114,7 @@ contract PermissionedUSDCWrapper is ERC20PermissionedBase, Auth {
     /**
      * @dev Allow a user to burn a number of wrapped tokens and withdraw the corresponding number of underlying tokens.
      */
-    function withdrawTo(address account, uint256 value) public override onlyAttested returns (bool) {
+    function withdrawTo(address account, uint256 value) public override onlyPermissioned returns (bool) {
         if (account == address(this)) {
             revert ERC20InvalidReceiver(account);
         }
@@ -124,7 +124,7 @@ contract PermissionedUSDCWrapper is ERC20PermissionedBase, Auth {
     }
 
     function transferFrom(address from, address to, uint256 value) public override returns (bool) {
-        require(hasPermission(to));
+        require(hasPermission(to), "USDCWrapper: no permission");
         address spender = _msgSender();
         _spendAllowance(from, spender, value);
         _transfer(from, to, value);
@@ -132,16 +132,21 @@ contract PermissionedUSDCWrapper is ERC20PermissionedBase, Auth {
     }
 
     function transfer(address to, uint256 value) public override returns (bool) {
-        require(hasPermission(to));
+        require(hasPermission(to), "USDCWrapper: no permission");
         address owner = _msgSender();
         _transfer(owner, to, value);
         return true;
     }
 
-    function hasPermission(address user) public view override returns (bool attested) {
-        bytes32 attestationUid = indexer.getAttestationUid(user, schemaUid);
+    function hasPermission(address account) public view override returns (bool attested) {
+        super.hasPermission(account);
+        if (account == address(this) || account == address(0) || account == MORPHO || account == BUNDLER) {
+            return true;
+        }
+        bytes32 attestationUid = indexer.getAttestationUid(account, schemaUid);
+        require(attestationUid != 0, "USDCWrapper: no attestation found");
         Attestation memory attestation = attestationService.getAttestation(attestationUid);
-        string memory countryCode = extractCountryFromData(attestation.data);
+        string memory countryCode = parseCountryCode(attestation.data);
         bool isUS = compareStrings(countryCode, "US");
         return !isUS;
     }
@@ -162,12 +167,12 @@ contract PermissionedUSDCWrapper is ERC20PermissionedBase, Auth {
         return keccak256(abi.encodePacked(a)) == keccak256(abi.encodePacked(b));
     }
 
-    function extractCountryFromData(bytes memory data) internal pure returns (string memory) {
-        require(data.length >= 66, "Data too short");
-        // Extracting the string (assuming it starts at the 66th byte and is 2 bytes long)
+    function parseCountryCode(bytes memory data) internal pure returns (string memory) {
+        require(data.length >= 66, "USDCWrapper: invalid attestation data");
+        // Country code is two bytes long and begins at the 65th byte
         bytes memory countryBytes = new bytes(2);
-        for(uint i = 64; i < 66; i++) {
-            countryBytes[i - 64] = data[i];
+        for (uint256 i = 0; i < 2; i++) {
+            countryBytes[i] = data[i + 64];
         }
         return string(countryBytes);
     }
