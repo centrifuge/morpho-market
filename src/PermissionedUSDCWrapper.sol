@@ -29,7 +29,7 @@ interface AttestationService {
 }
 
 interface AttestationIndexer {
-    function getAttestationUid(address recipient, bytes32 schemaUid) external returns (bytes32);
+    function getAttestationUid(address recipient, bytes32 schemaUid) external view returns (bytes32);
 }
 
 struct CountryAttestation {
@@ -49,7 +49,7 @@ contract PermissionedUSDCWrapper is ERC20PermissionedBase, Auth {
     AttestationIndexer indexer;
 
     modifier onlyAttested() {
-        require(isAttested(_msgSender()));
+        require(hasPermission(_msgSender()));
         _;
     }
 
@@ -106,7 +106,7 @@ contract PermissionedUSDCWrapper is ERC20PermissionedBase, Auth {
     }
 
     function transferFrom(address from, address to, uint256 value) public override returns (bool) {
-        require(isAttested(to));
+        require(hasPermission(to));
         address spender = _msgSender();
         _spendAllowance(from, spender, value);
         _transfer(from, to, value);
@@ -114,13 +114,13 @@ contract PermissionedUSDCWrapper is ERC20PermissionedBase, Auth {
     }
 
     function transfer(address to, uint256 value) public override returns (bool) {
-        require(isAttested(to));
+        require(hasPermission(to));
         address owner = _msgSender();
         _transfer(owner, to, value);
         return true;
     }
 
-    function isAttested(address user) public returns (bool attested) {
+    function hasPermission(address user) public view override returns (bool attested) {
         bytes32 attestationUid = indexer.getAttestationUid(user, schemaUid);
         CountryAttestation memory attestation = attestationService.getAttestation(attestationUid);
         attested = (keccak256(abi.encodePacked((attestation.verifiedCountry))) != keccak256(abi.encodePacked(("US"))));
