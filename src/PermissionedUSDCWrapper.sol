@@ -3,8 +3,8 @@
 
 pragma solidity ^0.8.20;
 
-import {IERC20, IERC20Metadata, ERC20} from "./ERC20.sol";
-import {ERC20PermissionedBase} from "lib/erc20-permissioned/src/ERC20PermissionedBase.sol";
+import {IERC20Metadata} from "./ERC20.sol";
+import {ERC20PermissionedBase, IERC20} from "lib/erc20-permissioned/src/ERC20PermissionedBase.sol";
 import {SafeERC20} from "./SafeERC20.sol";
 import {Auth} from "./utils/Auth.sol";
 
@@ -54,7 +54,7 @@ contract PermissionedUSDCWrapper is ERC20PermissionedBase, Auth {
     }
 
     constructor(string memory name_, string memory symbol_, IERC20 underlyingToken, address morpho, address bundler) ERC20PermissionedBase(name_, symbol_, underlyingToken, morpho, bundler) {
-        if (underlyingToken == this) {
+        if (address(underlyingToken) == address(this)) {
             revert ERC20InvalidUnderlying(address(this));
         }
         _underlying = underlyingToken;
