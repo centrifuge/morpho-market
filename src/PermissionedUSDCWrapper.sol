@@ -25,11 +25,24 @@ import {Auth} from "./utils/Auth.sol";
 // attester: 0x4200000000000000000000000000000000000021 // base mainnet
 
 interface AttestationService {
-    function getAttestation(bytes32 uid) external view returns (CountryAttestation memory);
+    function getAttestation(bytes32 uid) external view returns (Attestation memory);
 }
 
 interface AttestationIndexer {
     function getAttestationUid(address recipient, bytes32 schemaUid) external view returns (bytes32);
+}
+
+struct Attestation {
+    bytes32 uid; // A unique identifier of the attestation.
+    bytes32 schema; // The unique identifier of the schema.
+    uint64 time; // The time when the attestation was created (Unix timestamp).
+    uint64 expirationTime; // The time when the attestation expires (Unix timestamp).
+    uint64 revocationTime; // The time when the attestation was revoked (Unix timestamp).
+    bytes32 refUID; // The UID of the related attestation.
+    address recipient; // The recipient of the attestation.
+    address attester; // The attester/sender of the attestation.
+    bool revocable; // Whether the attestation is revocable.
+    bytes data; // Custom attestation data.
 }
 
 struct CountryAttestation {
@@ -41,27 +54,32 @@ struct CountryAttestation {
 
 contract PermissionedUSDCWrapper is ERC20PermissionedBase, Auth {
     IERC20 private immutable _underlying;
-    
-     // verified country schema
+
+    // verified country schema
     bytes32 schemaUid = 0x1801901fabd0e6189356b4fb52bb0ab855276d84f7ec140839fbd1f6801ca065;
 
-    AttestationService attestationService;
-    AttestationIndexer indexer;
+    AttestationService public attestationService;
+    AttestationIndexer public indexer;
 
     modifier onlyAttested() {
         require(hasPermission(_msgSender()));
         _;
     }
 
-    constructor(string memory name_, string memory symbol_, IERC20 underlyingToken, address morpho, address bundler) ERC20PermissionedBase(name_, symbol_, underlyingToken, morpho, bundler) {
+    constructor(string memory name_, string memory symbol_, IERC20 underlyingToken, address morpho, address bundler)
+        ERC20PermissionedBase(name_, symbol_, underlyingToken, morpho, bundler)
+    {
         if (address(underlyingToken) == address(this)) {
             revert ERC20InvalidUnderlying(address(this));
         }
         _underlying = underlyingToken;
+
+        wards[msg.sender] = 1;
+        emit Rely(msg.sender);
     }
 
     function file(bytes32 what, address data) external auth {
-        if (what == "indexer") attestationService = AttestationService(data);
+        if (what == "indexer") indexer = AttestationIndexer(data);
         else if (what == "service") attestationService = AttestationService(data);
         else revert("USDCWrapper/file-unrecognized-param");
     }
@@ -122,8 +140,10 @@ contract PermissionedUSDCWrapper is ERC20PermissionedBase, Auth {
 
     function hasPermission(address user) public view override returns (bool attested) {
         bytes32 attestationUid = indexer.getAttestationUid(user, schemaUid);
-        CountryAttestation memory attestation = attestationService.getAttestation(attestationUid);
-        attested = (keccak256(abi.encodePacked((attestation.verifiedCountry))) != keccak256(abi.encodePacked(("US"))));
+        Attestation memory attestation = attestationService.getAttestation(attestationUid);
+        string memory countryCode = extractCountryFromData(attestation.data);
+        bool isUS = compareStrings(countryCode, "US");
+        return !isUS;
     }
 
     /**
@@ -134,5 +154,21 @@ contract PermissionedUSDCWrapper is ERC20PermissionedBase, Auth {
         uint256 value = _underlying.balanceOf(address(this)) - totalSupply();
         _mint(account, value);
         return value;
+    }
+
+    // --- Helpers ---
+
+    function compareStrings(string memory a, string memory b) internal pure returns (bool) {
+        return keccak256(abi.encodePacked(a)) == keccak256(abi.encodePacked(b));
+    }
+
+    function extractCountryFromData(bytes memory data) internal pure returns (string memory) {
+        require(data.length >= 66, "Data too short");
+        // Extracting the string (assuming it starts at the 66th byte and is 2 bytes long)
+        bytes memory countryBytes = new bytes(2);
+        for(uint i = 64; i < 66; i++) {
+            countryBytes[i - 64] = data[i];
+        }
+        return string(countryBytes);
     }
 }
