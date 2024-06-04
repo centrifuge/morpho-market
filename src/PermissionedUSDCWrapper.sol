@@ -4,9 +4,10 @@
 pragma solidity ^0.8.20;
 
 import {IERC20Metadata} from "./ERC20.sol";
-import {ERC20PermissionedBase, IERC20} from "lib/erc20-permissioned/src/ERC20PermissionedBase.sol";
+import {ERC20, ERC20Wrapper, ERC20Permit, IERC20} from "lib/erc20-permissioned/src/ERC20PermissionedBase.sol";
 import {SafeERC20} from "./SafeERC20.sol";
 import {Auth} from "./utils/Auth.sol";
+import {IERC20PermissionedBase} from "src/interfaces/IERC20PermissionedBase.sol";
 
 /**
  * @dev Extension of the ERC-20 token contract to support token wrapping.
@@ -49,10 +50,23 @@ struct CountryAttestation {
     string verifiedCountry; // Custom attestation data.
 }
 
-contract PermissionedUSDCWrapper is ERC20PermissionedBase, Auth {
-    IERC20 private immutable _underlying;
+contract PermissionedUSDCWrapper is Auth, ERC20, ERC20Wrapper, ERC20Permit {
+    /* ERRORS */
 
-    // verified country schema
+    /// @notice Thrown when `account` has no permission.
+    error NoPermission(address account);
+    
+    /* IMMUTABLES */
+
+    /// @notice The address of the Morpho contract.
+    address public immutable MORPHO;
+
+    /// @notice The address of the Bundler contract.
+    address public immutable BUNDLER;
+
+    /// @notice The underlying token.
+    IERC20 private immutable _underlying;
+    
     bytes32 verifiedCountrySchemaUid = 0x1801901fabd0e6189356b4fb52bb0ab855276d84f7ec140839fbd1f6801ca065;
     bytes32 verifiedAccountSchemaUid = 0xf8b05c79f090979bf4a80270aba232dff11a10d9ca55c4f88de95317970f0de9;
 
@@ -60,13 +74,17 @@ contract PermissionedUSDCWrapper is ERC20PermissionedBase, Auth {
     AttestationIndexer public indexer;
 
     modifier onlyPermissioned() {
-        require(hasPermission(_msgSender()), "USDCWrapper: no permission");
+        require(hasPermission(_msgSender()), "USDCWrapper onlyPermissioned: no permission");
         _;
     }
 
     constructor(string memory name_, string memory symbol_, IERC20 underlyingToken, address morpho, address bundler)
-        ERC20PermissionedBase(name_, symbol_, underlyingToken, morpho, bundler)
+        ERC20Wrapper(underlyingToken)
+        ERC20Permit(name_)
+        ERC20(name_, symbol_)
     {
+        MORPHO = morpho;
+        BUNDLER = bundler;
         if (address(underlyingToken) == address(this)) {
             revert ERC20InvalidUnderlying(address(this));
         }
@@ -85,7 +103,7 @@ contract PermissionedUSDCWrapper is ERC20PermissionedBase, Auth {
     /**
      * @dev See {ERC20-decimals}.
      */
-    function decimals() public view virtual override returns (uint8) {
+    function decimals() public view virtual override(ERC20, ERC20Wrapper) returns (uint8) {
         try IERC20Metadata(address(_underlying)).decimals() returns (uint8 value) {
             return value;
         } catch {
@@ -96,7 +114,7 @@ contract PermissionedUSDCWrapper is ERC20PermissionedBase, Auth {
     /**
      * @dev Allow a user to deposit underlying tokens and mint the corresponding number of wrapped tokens.
      */
-    function depositFor(address account, uint256 value) public override onlyPermissioned returns (bool) {
+    function depositFor(address account, uint256 value) public override returns (bool) {
         address sender = _msgSender();
         if (sender == address(this)) {
             revert ERC20InvalidSender(address(this));
@@ -112,7 +130,7 @@ contract PermissionedUSDCWrapper is ERC20PermissionedBase, Auth {
     /**
      * @dev Allow a user to burn a number of wrapped tokens and withdraw the corresponding number of underlying tokens.
      */
-    function withdrawTo(address account, uint256 value) public override onlyPermissioned returns (bool) {
+    function withdrawTo(address account, uint256 value) public override returns (bool) {
         if (account == address(this)) {
             revert ERC20InvalidReceiver(account);
         }
@@ -136,11 +154,11 @@ contract PermissionedUSDCWrapper is ERC20PermissionedBase, Auth {
         return true;
     }
 
-    function hasPermission(address account) public view override returns (bool attested) {
-        if (account == address(this) || super.hasPermission(account)) {
+    function hasPermission(address account) public view returns (bool attested) {
+        if (account == address(this) || account == address(0) || account == MORPHO || account == BUNDLER) {
             return true;
         }
-        
+
         Attestation memory verifiedAccountAttestation = getVerifiedAccountAttestation(account);
         bool isAccountVerified = keccak256(verifiedAccountAttestation.data) == keccak256(abi.encodePacked(uint256(1)));
         
@@ -177,6 +195,12 @@ contract PermissionedUSDCWrapper is ERC20PermissionedBase, Auth {
         return value;
     }
 
+    function _update(address from, address to, uint256 value) internal virtual override {
+        if (!hasPermission(to)) revert NoPermission(to);
+
+        super._update(from, to, value);
+    }
+
     // --- Helpers ---
     function parseCountryCode(bytes memory data) internal pure returns (string memory) {
         require(data.length >= 66, "USDCWrapper: invalid attestation data");
@@ -187,9 +211,4 @@ contract PermissionedUSDCWrapper is ERC20PermissionedBase, Auth {
         }
         return string(countryBytes);
     }
-
-    // function parseBool(bytes memory data) internal pure returns (bool) {
-    //     require(data.length >= 1, "USDCWrapper: invalid attestation data");
-    //     return data[0] == 1;
-    // }
 }

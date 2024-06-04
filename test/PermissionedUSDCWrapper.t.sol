@@ -54,7 +54,7 @@ contract PermissionedUSDCWrapperTest is Test {
         bool hasPermissionVerifiedAccount = wrapper.hasPermission(userVerifiedAccount);
     }
 
-    function test_DepositFor_WithNonUSUser_Works() public {
+    function test_DepositFor_WithPermissioned_Works() public {
         deal(address(token), userNonUS, 100);
         vm.startPrank(userNonUS);
         token.approve(address(wrapper), 100);
@@ -64,7 +64,16 @@ contract PermissionedUSDCWrapperTest is Test {
         assertEq(token.balanceOf(address(wrapper)), 100);
     }
 
-    function test_DepositFor_FromNonPermissionToPermissioned_Works() public {
+    function test_DepositFor_WithNonPermissioned_Fails() public {
+        deal(address(token), userUS, 100);
+        vm.startPrank(userUS);
+        token.approve(address(wrapper), 100);
+        vm.expectRevert(abi.encodeWithSelector(PermissionedUSDCWrapper.NoPermission.selector, userUS));
+        wrapper.depositFor(userUS, 100);
+        vm.stopPrank();
+    }
+
+    function test_DepositFor_FromNonPermissionedToPermissioned_Works() public {
         deal(address(token), userUS, 100);
         vm.startPrank(userUS);
         token.approve(address(wrapper), 100);
@@ -74,10 +83,32 @@ contract PermissionedUSDCWrapperTest is Test {
         assertEq(token.balanceOf(address(wrapper)), 100);
     }
 
-    function test_withdrawTo_WithNonUSUSer_Works() public {
+    function test_WithdrawTo_WithPermissioned_Works() public {
         deal(address(wrapper), userNonUS, 100);
         deal(address(token), address(wrapper), 100);
         vm.startPrank(userNonUS);
+        wrapper.approve(address(wrapper), 100);
+        wrapper.withdrawTo(userNonUS, 100);
+        vm.stopPrank();
+        assertEq(wrapper.balanceOf(userNonUS), 0);
+        assertEq(token.balanceOf(userNonUS), 100);
+    }
+
+    function test_WithdrawTo_WithNonPermissioned_Works() public {
+        deal(address(wrapper), userUS, 100);
+        deal(address(token), address(wrapper), 100);
+        vm.startPrank(userUS);
+        wrapper.approve(address(wrapper), 100);
+        wrapper.withdrawTo(userUS, 100);
+        vm.stopPrank();
+        assertEq(wrapper.balanceOf(userUS), 0);
+        assertEq(token.balanceOf(userUS), 100);
+    }
+
+    function test_WithdrawTo_FromNonPermissionedToPermissioned_Works() public {
+        deal(address(wrapper), userUS, 100);
+        deal(address(token), address(wrapper), 100);
+        vm.startPrank(userUS);
         wrapper.approve(address(wrapper), 100);
         wrapper.withdrawTo(userNonUS, 100);
         vm.stopPrank();
