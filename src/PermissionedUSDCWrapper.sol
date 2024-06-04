@@ -21,15 +21,12 @@ import {Auth} from "./utils/Auth.sol";
  * for recovering value accrued to the wrapper.
  */
 
-// indexer: 0x2c7eE1E5f416dfF40054c27A62f7B357C4E8619C // base mainnet
-// attester: 0x4200000000000000000000000000000000000021 // base mainnet
-
 interface AttestationService {
     function getAttestation(bytes32 uid) external view returns (Attestation memory);
 }
 
 interface AttestationIndexer {
-    function getAttestationUid(address recipient, bytes32 schemaUid) external view returns (bytes32);
+    function getAttestationUid(address recipient, bytes32 verifiedCountrySchemaUid) external view returns (bytes32);
 }
 
 struct Attestation {
@@ -56,7 +53,8 @@ contract PermissionedUSDCWrapper is ERC20PermissionedBase, Auth {
     IERC20 private immutable _underlying;
 
     // verified country schema
-    bytes32 schemaUid = 0x1801901fabd0e6189356b4fb52bb0ab855276d84f7ec140839fbd1f6801ca065;
+    bytes32 verifiedCountrySchemaUid = 0x1801901fabd0e6189356b4fb52bb0ab855276d84f7ec140839fbd1f6801ca065;
+    bytes32 verifiedAccountSchemaUid = 0xf8b05c79f090979bf4a80270aba232dff11a10d9ca55c4f88de95317970f0de9;
 
     AttestationService public attestationService;
     AttestationIndexer public indexer;
@@ -139,16 +137,34 @@ contract PermissionedUSDCWrapper is ERC20PermissionedBase, Auth {
     }
 
     function hasPermission(address account) public view override returns (bool attested) {
-        super.hasPermission(account);
-        if (account == address(this) || account == address(0) || account == MORPHO || account == BUNDLER) {
+        if (account == address(this) || super.hasPermission(account)) {
             return true;
         }
-        bytes32 attestationUid = indexer.getAttestationUid(account, schemaUid);
+        
+        Attestation memory verifiedAccountAttestation = getVerifiedAccountAttestation(account);
+        bool isAccountVerified = keccak256(verifiedAccountAttestation.data) == keccak256(abi.encodePacked(uint256(1)));
+        
+        Attestation memory verifiedCountryAttestation = getVerifiedCountryAttestation(account);
+        string memory countryCode = parseCountryCode(verifiedCountryAttestation.data);
+        bool isUS = keccak256(abi.encodePacked(countryCode)) == keccak256(abi.encodePacked("US"));
+
+        return isAccountVerified && !isUS;
+    }
+
+    function getVerifiedCountryAttestation(address account) public view returns (Attestation memory attestation) {
+        bytes32 attestationUid = indexer.getAttestationUid(account, verifiedCountrySchemaUid);
         require(attestationUid != 0, "USDCWrapper: no attestation found");
-        Attestation memory attestation = attestationService.getAttestation(attestationUid);
-        string memory countryCode = parseCountryCode(attestation.data);
-        bool isUS = compareStrings(countryCode, "US");
-        return !isUS;
+        attestation = attestationService.getAttestation(attestationUid);
+        require(attestation.expirationTime == 0, "USDCWrapper: attestation expired");
+        require(attestation.revocationTime == 0, "USDCWrapper: attestation revoked");
+    }
+
+    function getVerifiedAccountAttestation(address account) public view returns (Attestation memory attestation) {
+        bytes32 attestationUid = indexer.getAttestationUid(account, verifiedAccountSchemaUid);
+        require(attestationUid != 0, "USDCWrapper: no attestation found");
+        attestation = attestationService.getAttestation(attestationUid);
+        require(attestation.expirationTime == 0, "USDCWrapper: attestation expired");
+        require(attestation.revocationTime == 0, "USDCWrapper: attestation revoked");
     }
 
     /**
@@ -162,11 +178,6 @@ contract PermissionedUSDCWrapper is ERC20PermissionedBase, Auth {
     }
 
     // --- Helpers ---
-
-    function compareStrings(string memory a, string memory b) internal pure returns (bool) {
-        return keccak256(abi.encodePacked(a)) == keccak256(abi.encodePacked(b));
-    }
-
     function parseCountryCode(bytes memory data) internal pure returns (string memory) {
         require(data.length >= 66, "USDCWrapper: invalid attestation data");
         // Country code is two bytes long and begins at the 65th byte
@@ -176,4 +187,9 @@ contract PermissionedUSDCWrapper is ERC20PermissionedBase, Auth {
         }
         return string(countryBytes);
     }
+
+    // function parseBool(bytes memory data) internal pure returns (bool) {
+    //     require(data.length >= 1, "USDCWrapper: invalid attestation data");
+    //     return data[0] == 1;
+    // }
 }
