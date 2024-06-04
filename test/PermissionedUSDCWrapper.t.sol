@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 import {Test, console2} from "forge-std/Test.sol";
-import "src/PermissionedUSDCWrapper.sol";
+import {PermissionedUSDCWrapper, IERC20} from "src/PermissionedUSDCWrapper.sol";
 import {ERC20} from "src/ERC20.sol";
 
 contract PermissionedUSDCWrapperTest is Test {
@@ -54,12 +54,22 @@ contract PermissionedUSDCWrapperTest is Test {
         bool hasPermissionVerifiedAccount = wrapper.hasPermission(userVerifiedAccount);
     }
 
-
     function test_DepositFor_WithNonUSUser_Works() public {
         deal(address(token), userNonUS, 100);
         vm.startPrank(userNonUS);
         token.approve(address(wrapper), 100);
         wrapper.depositFor(userNonUS, 100);
+        vm.stopPrank();
+        assertEq(wrapper.balanceOf(userNonUS), 100);
+        assertEq(token.balanceOf(address(wrapper)), 100);
+    }
+
+    function test_DepositFor_FromNonPermissionToPermissioned_Works() public {
+        deal(address(token), userUS, 100);
+        vm.startPrank(userUS);
+        token.approve(address(wrapper), 100);
+        wrapper.depositFor(userNonUS, 100);
+        vm.stopPrank();
         assertEq(wrapper.balanceOf(userNonUS), 100);
         assertEq(token.balanceOf(address(wrapper)), 100);
     }
@@ -70,7 +80,9 @@ contract PermissionedUSDCWrapperTest is Test {
         vm.startPrank(userNonUS);
         wrapper.approve(address(wrapper), 100);
         wrapper.withdrawTo(userNonUS, 100);
+        vm.stopPrank();
         assertEq(wrapper.balanceOf(userNonUS), 0);
         assertEq(token.balanceOf(userNonUS), 100);
     }
+
 }
