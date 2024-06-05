@@ -71,31 +71,33 @@ contract PermissionedUSDCWrapper is Auth, ERC20, ERC20Wrapper, ERC20Permit {
     bytes32 verifiedAccountSchemaUid = 0xf8b05c79f090979bf4a80270aba232dff11a10d9ca55c4f88de95317970f0de9;
 
     AttestationService public attestationService;
-    AttestationIndexer public indexer;
+    AttestationIndexer public attestationIndexer;
 
     modifier onlyPermissioned() {
         require(hasPermission(_msgSender()), "USDCWrapper onlyPermissioned: no permission");
         _;
     }
 
-    constructor(string memory name_, string memory symbol_, IERC20 underlyingToken, address morpho, address bundler)
-        ERC20Wrapper(underlyingToken)
+    constructor(string memory name_, string memory symbol_, IERC20 underlyingToken_, address morpho_, address bundler_, address attestationService_, address attestationIndexer_)
+        ERC20Wrapper(underlyingToken_)
         ERC20Permit(name_)
         ERC20(name_, symbol_)
     {
-        MORPHO = morpho;
-        BUNDLER = bundler;
-        if (address(underlyingToken) == address(this)) {
+        MORPHO = morpho_;
+        BUNDLER = bundler_;
+        attestationService = AttestationService(attestationService_);
+        attestationIndexer = AttestationIndexer(attestationIndexer_);
+        if (address(underlyingToken_) == address(this)) {
             revert ERC20InvalidUnderlying(address(this));
         }
-        _underlying = underlyingToken;
+        _underlying = underlyingToken_;
 
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
     }
 
     function file(bytes32 what, address data) external auth {
-        if (what == "indexer") indexer = AttestationIndexer(data);
+        if (what == "indexer") attestationIndexer = AttestationIndexer(data);
         else if (what == "service") attestationService = AttestationService(data);
         else revert("USDCWrapper/file-unrecognized-param");
     }
@@ -170,7 +172,7 @@ contract PermissionedUSDCWrapper is Auth, ERC20, ERC20Wrapper, ERC20Permit {
     }
 
     function getVerifiedCountryAttestation(address account) public view returns (Attestation memory attestation) {
-        bytes32 attestationUid = indexer.getAttestationUid(account, verifiedCountrySchemaUid);
+        bytes32 attestationUid = attestationIndexer.getAttestationUid(account, verifiedCountrySchemaUid);
         require(attestationUid != 0, "USDCWrapper: no attestation found");
         attestation = attestationService.getAttestation(attestationUid);
         require(attestation.expirationTime == 0, "USDCWrapper: attestation expired");
@@ -178,7 +180,7 @@ contract PermissionedUSDCWrapper is Auth, ERC20, ERC20Wrapper, ERC20Permit {
     }
 
     function getVerifiedAccountAttestation(address account) public view returns (Attestation memory attestation) {
-        bytes32 attestationUid = indexer.getAttestationUid(account, verifiedAccountSchemaUid);
+        bytes32 attestationUid = attestationIndexer.getAttestationUid(account, verifiedAccountSchemaUid);
         require(attestationUid != 0, "USDCWrapper: no attestation found");
         attestation = attestationService.getAttestation(attestationUid);
         require(attestation.expirationTime == 0, "USDCWrapper: attestation expired");
