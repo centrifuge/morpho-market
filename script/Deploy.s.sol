@@ -7,12 +7,12 @@ import {PermissionedUSDCWrapper, IERC20} from "src/PermissionedUSDCWrapper.sol";
 
 contract DeployScript is Script {
 
-    address USDC = address(0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913);
-    address morpho = address(0);
-    address bundler = address(0);
-    address attestationService = address(0x4200000000000000000000000000000000000021);
-    address attestationIndexer = address(0x2c7eE1E5f416dfF40054c27A62f7B357C4E8619C);
-    address admin = address(0);
+    address USDC = vm.envAddress(UNDERLYING_TOKEN);
+    address morpho = vm.envAddress(MORPHO);
+    address bundler = vm.envAddress(BUNDLER);
+    address attestationService = vm.envAddress(ATTESTATION_SERVICE);
+    address attestationIndexer = vm.envAddress(ATTESTATION_INDEXER);
+    address admin = vm.envAddress(ADMIN);
 
     function setUp() public {}
 
