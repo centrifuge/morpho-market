@@ -162,7 +162,7 @@ contract PermissionedUSDCWrapperTest is Test {
 
     function test_transfer_FromPermissionedToNonPermissioned_Fails() public {
         deal(address(wrappedUSDC), userNonUS1, 100);
-        vm.expectRevert("USDCWrapper: no permission");
+        vm.expectRevert(abi.encodeWithSelector(PermissionedUSDCWrapper.NoPermission.selector, userUS));
         vm.prank(userNonUS1);
         wrappedUSDC.transfer(userUS, 100);
     }

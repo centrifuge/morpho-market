@@ -4,7 +4,6 @@ pragma solidity 0.8.21;
 import {Auth} from "./utils/Auth.sol";
 
 contract Memberlist is Auth {
-    // --- Storage ---
 
     mapping(address => uint) public members;
 
@@ -13,14 +12,12 @@ contract Memberlist is Auth {
     event MemberAdded(address member);
     event MemberRemoved(address member);
 
-    // --- Constructor ---
-
     constructor() {
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
     }
 
-    // --- External ---
+    // --- Memberlist Management
 
     function addMember(address member) external auth {
         require(members[member] == 0, "Memberlist: member already exists");

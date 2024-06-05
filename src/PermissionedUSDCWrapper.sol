@@ -11,16 +11,11 @@ import {IERC20PermissionedBase} from "src/interfaces/IERC20PermissionedBase.sol"
 import {Memberlist} from "src/Memberlist.sol";
 
 /**
- * @dev Extension of the ERC-20 token contract to support token wrapping.
+ * @dev Extension of the ERC-20 token contract to support token wrapping and transferring for permissioned addresses.
  *
- * Users can deposit and withdraw "underlying tokens" and receive a matching number of "wrapped tokens". This is useful
- * in conjunction with other modules. For example, combining this wrapping mechanism with {ERC20Votes} will allow the
- * wrapping of an existing "basic" ERC-20 into a governance token.
- *
- * WARNING: Any mechanism in which the underlying token changes the {balanceOf} of an account without an explicit transfer
- * may desynchronize this contract's supply and its underlying balance. Please exercise caution when wrapping tokens that
- * may undercollateralize the wrapper (i.e. wrapper's total supply is higher than its underlying balance). See {_recover}
- * for recovering value accrued to the wrapper.
+ * Permissioned addresses are either those on the memberlist or those with both a VERIFIED_ACCOUNT attestation and a
+ * VERIFIED_COUNTRY attestation of anything other than "US". Attestations are provided by Coinbase through the Ethereum
+ * Attestation Service.
  */
 
 interface AttestationService {
@@ -134,21 +129,6 @@ contract PermissionedUSDCWrapper is Auth, ERC20, ERC20Wrapper, ERC20Permit {
         return true;
     }
 
-    function transferFrom(address from, address to, uint256 value) public override returns (bool) {
-        require(hasPermission(to), "USDCWrapper: no permission");
-        address spender = _msgSender();
-        _spendAllowance(from, spender, value);
-        _transfer(from, to, value);
-        return true;
-    }
-
-    function transfer(address to, uint256 value) public override returns (bool) {
-        require(hasPermission(to), "USDCWrapper: no permission");
-        address owner = _msgSender();
-        _transfer(owner, to, value);
-        return true;
-    }
-
     function hasPermission(address account) public view returns (bool attested) {
         if (account == address(this) || account == address(0) || account == MORPHO || account == BUNDLER || memberlist.isMember(account)) {
             return true;
@@ -182,12 +162,10 @@ contract PermissionedUSDCWrapper is Auth, ERC20, ERC20Wrapper, ERC20Permit {
 
     /**
      * @dev Mint wrapped token to cover any underlyingTokens that would have been transferred by mistake or acquired from
-     * rebasing mechanisms. Internal function that can be exposed with access control if desired.
+     * rebasing mechanisms.
      */
-    function _recover(address account) internal override returns (uint256) {
-        uint256 value = _underlying.balanceOf(address(this)) - totalSupply();
-        _mint(account, value);
-        return value;
+    function recover(address account) public auth returns (uint256) {
+        _recover(account);
     }
 
     function _update(address from, address to, uint256 value) internal virtual override {
