@@ -4,8 +4,7 @@ pragma solidity 0.8.21;
 import {Auth} from "./utils/Auth.sol";
 
 contract Memberlist is Auth {
-
-    mapping(address => uint) public members;
+    mapping(address => uint256) public members;
 
     // --- Events ---
 

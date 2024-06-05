@@ -4,7 +4,6 @@ import {Test} from "forge-std/Test.sol";
 import {Memberlist} from "src/Memberlist.sol";
 
 contract MemberlistTest is Test {
-
     Memberlist memberlist;
 
     function setUp() public {

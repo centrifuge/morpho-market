@@ -17,7 +17,6 @@ import {Memberlist} from "src/Memberlist.sol";
  * VERIFIED_COUNTRY attestation of anything other than "US". Attestations are provided by Coinbase through the Ethereum
  * Attestation Service.
  */
-
 interface AttestationService {
     function getAttestation(bytes32 uid) external view returns (Attestation memory);
 }
@@ -44,7 +43,7 @@ contract PermissionedUSDCWrapper is Auth, ERC20, ERC20Wrapper, ERC20Permit {
 
     /// @notice Thrown when `account` has no permission.
     error NoPermission(address account);
-    
+
     // --- IMMUTABLES ---
 
     /// @notice The address of the Morpho contract.
@@ -55,7 +54,7 @@ contract PermissionedUSDCWrapper is Auth, ERC20, ERC20Wrapper, ERC20Permit {
 
     /// @notice The underlying token.
     IERC20 private immutable _underlying;
-    
+
     bytes32 verifiedCountrySchemaUid = 0x1801901fabd0e6189356b4fb52bb0ab855276d84f7ec140839fbd1f6801ca065;
     bytes32 verifiedAccountSchemaUid = 0xf8b05c79f090979bf4a80270aba232dff11a10d9ca55c4f88de95317970f0de9;
 
@@ -63,12 +62,16 @@ contract PermissionedUSDCWrapper is Auth, ERC20, ERC20Wrapper, ERC20Permit {
     AttestationIndexer public attestationIndexer;
     Memberlist public memberlist;
 
-
-    constructor(string memory name_, string memory symbol_, IERC20 underlyingToken_, address morpho_, address bundler_, address attestationService_, address attestationIndexer_, address memberlist_)
-        ERC20Wrapper(underlyingToken_)
-        ERC20Permit(name_)
-        ERC20(name_, symbol_)
-    {
+    constructor(
+        string memory name_,
+        string memory symbol_,
+        IERC20 underlyingToken_,
+        address morpho_,
+        address bundler_,
+        address attestationService_,
+        address attestationIndexer_,
+        address memberlist_
+    ) ERC20Wrapper(underlyingToken_) ERC20Permit(name_) ERC20(name_, symbol_) {
         MORPHO = morpho_;
         BUNDLER = bundler_;
         attestationService = AttestationService(attestationService_);
@@ -130,13 +133,16 @@ contract PermissionedUSDCWrapper is Auth, ERC20, ERC20Wrapper, ERC20Permit {
     }
 
     function hasPermission(address account) public view returns (bool attested) {
-        if (account == address(this) || account == address(0) || account == MORPHO || account == BUNDLER || memberlist.isMember(account)) {
+        if (
+            account == address(this) || account == address(0) || account == MORPHO || account == BUNDLER
+                || memberlist.isMember(account)
+        ) {
             return true;
         }
 
         Attestation memory verifiedAccountAttestation = getVerifiedAccountAttestation(account);
         bool isAccountVerified = keccak256(verifiedAccountAttestation.data) == keccak256(abi.encodePacked(uint256(1)));
-        
+
         Attestation memory verifiedCountryAttestation = getVerifiedCountryAttestation(account);
         string memory countryCode = parseCountryCode(verifiedCountryAttestation.data);
         bool isUS = keccak256(abi.encodePacked(countryCode)) == keccak256(abi.encodePacked("US"));

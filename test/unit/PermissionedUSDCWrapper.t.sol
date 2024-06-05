@@ -20,7 +20,16 @@ contract PermissionedUSDCWrapperTest is Test {
     function setUp() public {
         usdc = new ERC20("USDC", "USDC");
         memberlist = new Memberlist();
-        wrappedUSDC = new PermissionedUSDCWrapper("attested USDC", "aUSDC", IERC20(address(usdc)), address(0), address(0), address(0x4200000000000000000000000000000000000021), address(0x2c7eE1E5f416dfF40054c27A62f7B357C4E8619C), address(memberlist));
+        wrappedUSDC = new PermissionedUSDCWrapper(
+            "attested USDC",
+            "aUSDC",
+            IERC20(address(usdc)),
+            address(0),
+            address(0),
+            address(0x4200000000000000000000000000000000000021),
+            address(0x2c7eE1E5f416dfF40054c27A62f7B357C4E8619C),
+            address(memberlist)
+        );
 
         // unless specified, all addresses have a VERIFIED_ACCOUNT attestation as well.
         userUS = address(0x27CDCb15c9c47D173BEe093Fa3bdDaDF8f00A520);
