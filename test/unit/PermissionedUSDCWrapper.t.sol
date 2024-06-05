@@ -4,9 +4,11 @@ pragma solidity ^0.8.13;
 import {Test, console2} from "forge-std/Test.sol";
 import {PermissionedUSDCWrapper, IERC20} from "src/PermissionedUSDCWrapper.sol";
 import {ERC20} from "src/ERC20.sol";
+import {Memberlist} from "src/Memberlist.sol";
 
 contract PermissionedUSDCWrapperTest is Test {
     PermissionedUSDCWrapper wrappedUSDC;
+    Memberlist memberlist;
 
     address userUS;
     address userNonUS1;
@@ -17,7 +19,8 @@ contract PermissionedUSDCWrapperTest is Test {
 
     function setUp() public {
         usdc = new ERC20("USDC", "USDC");
-        wrappedUSDC = new PermissionedUSDCWrapper("attested USDC", "aUSDC", IERC20(address(usdc)), address(0), address(0), address(0x4200000000000000000000000000000000000021), address(0x2c7eE1E5f416dfF40054c27A62f7B357C4E8619C));
+        memberlist = new Memberlist();
+        wrappedUSDC = new PermissionedUSDCWrapper("attested USDC", "aUSDC", IERC20(address(usdc)), address(0), address(0), address(0x4200000000000000000000000000000000000021), address(0x2c7eE1E5f416dfF40054c27A62f7B357C4E8619C), address(memberlist));
 
         // unless specified, all addresses have a VERIFIED_ACCOUNT attestation as well.
         userUS = address(0x27CDCb15c9c47D173BEe093Fa3bdDaDF8f00A520);
@@ -55,6 +58,19 @@ contract PermissionedUSDCWrapperTest is Test {
         bool hasPermissionVerifiedAccount = wrappedUSDC.hasPermission(userVerifiedAccount);
     }
 
+    function test_HasPermission_WithMemberlistUser_Works() public {
+        memberlist.addMember(userNoAttestation);
+        bool hasPermissionMemberlist = wrappedUSDC.hasPermission(userNoAttestation);
+        assertEq(hasPermissionMemberlist, true);
+    }
+
+    function test_HasPermission_WithRemovedMemberlistUser_Fails() public {
+        memberlist.addMember(userNoAttestation);
+        memberlist.removeMember(userNoAttestation);
+        vm.expectRevert("USDCWrapper: no attestation found");
+        bool hasPermissionRemovedMemberlist = wrappedUSDC.hasPermission(userNoAttestation);
+    }
+
     function test_DepositFor_WithPermissioned_Works() public {
         deal(address(usdc), userNonUS1, 100);
         vm.startPrank(userNonUS1);
@@ -62,6 +78,17 @@ contract PermissionedUSDCWrapperTest is Test {
         wrappedUSDC.depositFor(userNonUS1, 100);
         vm.stopPrank();
         assertEq(wrappedUSDC.balanceOf(userNonUS1), 100);
+        assertEq(usdc.balanceOf(address(wrappedUSDC)), 100);
+    }
+
+    function test_DepositFor_WithMemberlistUser_Works() public {
+        deal(address(usdc), userNoAttestation, 100);
+        memberlist.addMember(userNoAttestation);
+        vm.startPrank(userNoAttestation);
+        usdc.approve(address(wrappedUSDC), 100);
+        wrappedUSDC.depositFor(userNoAttestation, 100);
+        vm.stopPrank();
+        assertEq(wrappedUSDC.balanceOf(userNoAttestation), 100);
         assertEq(usdc.balanceOf(address(wrappedUSDC)), 100);
     }
 
@@ -122,6 +149,15 @@ contract PermissionedUSDCWrapperTest is Test {
         vm.prank(userNonUS1);
         wrappedUSDC.transfer(userNonUS2, 100);
         assertEq(wrappedUSDC.balanceOf(userNonUS2), 100);
+    }
+
+    function test_transfer_FromMemberlistUserToMemberlistUser_Works() public {
+        memberlist.addMember(userNoAttestation);
+        memberlist.addMember(address(5));
+        deal(address(wrappedUSDC), userNoAttestation, 100);
+        vm.prank(userNoAttestation);
+        wrappedUSDC.transfer(address(5), 100);
+        assertEq(wrappedUSDC.balanceOf(address(5)), 100);
     }
 
     function test_transfer_FromPermissionedToNonPermissioned_Fails() public {

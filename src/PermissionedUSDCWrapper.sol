@@ -8,6 +8,7 @@ import {ERC20, ERC20Wrapper, ERC20Permit, IERC20} from "lib/erc20-permissioned/s
 import {SafeERC20} from "./SafeERC20.sol";
 import {Auth} from "./utils/Auth.sol";
 import {IERC20PermissionedBase} from "src/interfaces/IERC20PermissionedBase.sol";
+import {Memberlist} from "src/Memberlist.sol";
 
 /**
  * @dev Extension of the ERC-20 token contract to support token wrapping.
@@ -43,20 +44,13 @@ struct Attestation {
     bytes data; // Custom attestation data.
 }
 
-struct CountryAttestation {
-    bytes32 schema; // The unique identifier of the schema.
-    address recipient; // The recipient of the attestation..
-    bool revocable; // Whether the attestation is revocable.
-    string verifiedCountry; // Custom attestation data.
-}
-
 contract PermissionedUSDCWrapper is Auth, ERC20, ERC20Wrapper, ERC20Permit {
-    /* ERRORS */
+    // --- ERRORS ---
 
     /// @notice Thrown when `account` has no permission.
     error NoPermission(address account);
     
-    /* IMMUTABLES */
+    // --- IMMUTABLES ---
 
     /// @notice The address of the Morpho contract.
     address public immutable MORPHO;
@@ -72,13 +66,10 @@ contract PermissionedUSDCWrapper is Auth, ERC20, ERC20Wrapper, ERC20Permit {
 
     AttestationService public attestationService;
     AttestationIndexer public attestationIndexer;
+    Memberlist public memberlist;
 
-    modifier onlyPermissioned() {
-        require(hasPermission(_msgSender()), "USDCWrapper onlyPermissioned: no permission");
-        _;
-    }
 
-    constructor(string memory name_, string memory symbol_, IERC20 underlyingToken_, address morpho_, address bundler_, address attestationService_, address attestationIndexer_)
+    constructor(string memory name_, string memory symbol_, IERC20 underlyingToken_, address morpho_, address bundler_, address attestationService_, address attestationIndexer_, address memberlist_)
         ERC20Wrapper(underlyingToken_)
         ERC20Permit(name_)
         ERC20(name_, symbol_)
@@ -87,6 +78,7 @@ contract PermissionedUSDCWrapper is Auth, ERC20, ERC20Wrapper, ERC20Permit {
         BUNDLER = bundler_;
         attestationService = AttestationService(attestationService_);
         attestationIndexer = AttestationIndexer(attestationIndexer_);
+        memberlist = Memberlist(memberlist_);
         if (address(underlyingToken_) == address(this)) {
             revert ERC20InvalidUnderlying(address(this));
         }
@@ -99,6 +91,7 @@ contract PermissionedUSDCWrapper is Auth, ERC20, ERC20Wrapper, ERC20Permit {
     function file(bytes32 what, address data) external auth {
         if (what == "indexer") attestationIndexer = AttestationIndexer(data);
         else if (what == "service") attestationService = AttestationService(data);
+        else if (what == "memberlist") memberlist = Memberlist(data);
         else revert("USDCWrapper/file-unrecognized-param");
     }
 
@@ -157,7 +150,7 @@ contract PermissionedUSDCWrapper is Auth, ERC20, ERC20Wrapper, ERC20Permit {
     }
 
     function hasPermission(address account) public view returns (bool attested) {
-        if (account == address(this) || account == address(0) || account == MORPHO || account == BUNDLER) {
+        if (account == address(this) || account == address(0) || account == MORPHO || account == BUNDLER || memberlist.isMember(account)) {
             return true;
         }
 
@@ -203,7 +196,7 @@ contract PermissionedUSDCWrapper is Auth, ERC20, ERC20Wrapper, ERC20Permit {
         super._update(from, to, value);
     }
 
-    // --- Helpers ---
+    // --- HELPERS ---
     function parseCountryCode(bytes memory data) internal pure returns (string memory) {
         require(data.length >= 66, "USDCWrapper: invalid attestation data");
         // Country code is two bytes long and begins at the 65th byte

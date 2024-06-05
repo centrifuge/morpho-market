@@ -23,6 +23,12 @@ contract MemberlistTest is Test {
         memberlist.addMember(address(1));
     }
 
+    function test_AddMember_ThatAlreadyExists_Fails() public {
+        memberlist.addMember(address(1));
+        vm.expectRevert("Memberlist: member already exists");
+        memberlist.addMember(address(1));
+    }
+
     function test_RemoveMember_AsOwner_Works() public {
         memberlist.addMember(address(1));
         memberlist.removeMember(address(1));
@@ -34,6 +40,11 @@ contract MemberlistTest is Test {
         memberlist.addMember(address(1));
         vm.expectRevert("Auth/not-authorized");
         vm.prank(address(0));
+        memberlist.removeMember(address(1));
+    }
+
+    function test_RemoveMember_ThatDoesNotExist_Fails() public {
+        vm.expectRevert("Memberlist: member does not exist");
         memberlist.removeMember(address(1));
     }
 }
