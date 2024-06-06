@@ -3,7 +3,7 @@
 
 pragma solidity ^0.8.20;
 
-import {IERC20} from "./interfaces/IERC20.sol";
+import {IERC20} from "lib/erc20-permissioned/src/ERC20PermissionedBase.sol";
 import {IERC1363} from "./interfaces/IERC1363.sol";
 import {Address} from "./utils/Address.sol";
 
@@ -91,7 +91,7 @@ library SafeERC20 {
      */
     function transferAndCallRelaxed(IERC1363 token, address to, uint256 value, bytes memory data) internal {
         if (to.code.length == 0) {
-            safeTransfer(token, to, value);
+            safeTransfer(IERC20(address(token)), to, value);
         } else if (!token.transferAndCall(to, value, data)) {
             revert SafeERC20FailedOperation(address(token));
         }
@@ -108,7 +108,7 @@ library SafeERC20 {
         internal
     {
         if (to.code.length == 0) {
-            safeTransferFrom(token, from, to, value);
+            safeTransferFrom(IERC20(address(token)), from, to, value);
         } else if (!token.transferFromAndCall(from, to, value, data)) {
             revert SafeERC20FailedOperation(address(token));
         }
@@ -127,7 +127,7 @@ library SafeERC20 {
      */
     function approveAndCallRelaxed(IERC1363 token, address to, uint256 value, bytes memory data) internal {
         if (to.code.length == 0) {
-            forceApprove(token, to, value);
+            forceApprove(IERC20(address(token)), to, value);
         } else if (!token.approveAndCall(to, value, data)) {
             revert SafeERC20FailedOperation(address(token));
         }
