@@ -3,10 +3,10 @@
 
 pragma solidity ^0.8.20;
 
-import {IERC20} from "./interfaces/IERC20.sol";
-import {IERC20Metadata} from "./interfaces/IERC20Metadata.sol";
-import {Context} from "./utils/Context.sol";
-import {IERC20Errors} from "./interfaces/draft-IERC6093.sol";
+import {IERC20} from "src/interfaces/IERC20.sol";
+import {IERC20Metadata} from "src/interfaces/IERC20Metadata.sol";
+import {Context} from "src/utils/Context.sol";
+import {IERC20Errors} from "src/interfaces/draft-IERC6093.sol";
 
 /**
  * @dev Implementation of the {IERC20} interface.
