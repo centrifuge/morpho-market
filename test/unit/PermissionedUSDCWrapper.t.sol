@@ -15,6 +15,7 @@ contract PermissionedUSDCWrapperTest is Test {
     address userNonUS2;
     address userNoAttestation;
     address userVerifiedAccount;
+    address userVerifiedAccountRevoked;
     ERC20 usdc;
 
     function setUp() public {
@@ -36,7 +37,8 @@ contract PermissionedUSDCWrapperTest is Test {
         userNonUS1 = address(0x7f7C9B77360348559f50BE488Ee15bc514bC7375);
         userNonUS2 = address(0x53753098E2660AbD4834A3eD713D11AC1123421A);
         userNoAttestation = makeAddr("NoAttestation");
-        userVerifiedAccount = address(0x67aEAe1Def34ACd37A785949edCb61b745491467);
+        userVerifiedAccount = address(0x197A995C0322053E42359B8796D9E307F4F83d7d);
+        userVerifiedAccountRevoked = address(0x67aEAe1Def34ACd37A785949edCb61b745491467);
 
         vm.label(address(usdc), "Test ERC20");
         vm.label(address(wrappedUSDC), "PermissionedUSDCWrapper");
@@ -65,6 +67,11 @@ contract PermissionedUSDCWrapperTest is Test {
     function test_HasPermission_WithOnlyVerifiedAccountAttestation_Fails() public {
         vm.expectRevert("USDCWrapper: no attestation found");
         bool hasPermissionVerifiedAccount = wrappedUSDC.hasPermission(userVerifiedAccount);
+    }
+
+    function test_HasPermission_WithRevokedVerifiedAccountAttestation_Fails() public {
+        vm.expectRevert("USDCWrapper: attestation revoked");
+        bool hasPermissionVerifiedAccountRevoked = wrappedUSDC.hasPermission(userVerifiedAccountRevoked);
     }
 
     function test_HasPermission_WithMemberlistUser_Works() public {

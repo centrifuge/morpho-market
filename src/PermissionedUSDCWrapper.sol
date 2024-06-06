@@ -140,26 +140,17 @@ contract PermissionedUSDCWrapper is Auth, ERC20, ERC20Wrapper, ERC20Permit {
             return true;
         }
 
-        Attestation memory verifiedAccountAttestation = getVerifiedAccountAttestation(account);
-        bool isAccountVerified = keccak256(verifiedAccountAttestation.data) == keccak256(abi.encodePacked(uint256(1)));
+        Attestation memory verifiedAccountAttestation = getAttestation(account, verifiedAccountSchemaUid);
 
-        Attestation memory verifiedCountryAttestation = getVerifiedCountryAttestation(account);
+        Attestation memory verifiedCountryAttestation = getAttestation(account, verifiedCountrySchemaUid);
         string memory countryCode = parseCountryCode(verifiedCountryAttestation.data);
-        bool isUS = keccak256(abi.encodePacked(countryCode)) == keccak256(abi.encodePacked("US"));
 
-        return isAccountVerified && !isUS;
+        return keccak256(verifiedAccountAttestation.data) == keccak256(abi.encodePacked(uint256(1)))
+            && keccak256(abi.encodePacked(countryCode)) != keccak256(abi.encodePacked("US"));
     }
 
-    function getVerifiedCountryAttestation(address account) public view returns (Attestation memory attestation) {
-        bytes32 attestationUid = attestationIndexer.getAttestationUid(account, verifiedCountrySchemaUid);
-        require(attestationUid != 0, "USDCWrapper: no attestation found");
-        attestation = attestationService.getAttestation(attestationUid);
-        require(attestation.expirationTime == 0, "USDCWrapper: attestation expired");
-        require(attestation.revocationTime == 0, "USDCWrapper: attestation revoked");
-    }
-
-    function getVerifiedAccountAttestation(address account) public view returns (Attestation memory attestation) {
-        bytes32 attestationUid = attestationIndexer.getAttestationUid(account, verifiedAccountSchemaUid);
+    function getAttestation(address account, bytes32 schemaUid) public view returns (Attestation memory attestation) {
+        bytes32 attestationUid = attestationIndexer.getAttestationUid(account, schemaUid);
         require(attestationUid != 0, "USDCWrapper: no attestation found");
         attestation = attestationService.getAttestation(attestationUid);
         require(attestation.expirationTime == 0, "USDCWrapper: attestation expired");
