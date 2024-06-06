@@ -143,10 +143,10 @@ contract PermissionedUSDCWrapper is Auth, ERC20, ERC20Wrapper, ERC20Permit {
         Attestation memory verifiedAccountAttestation = getAttestation(account, verifiedAccountSchemaUid);
 
         Attestation memory verifiedCountryAttestation = getAttestation(account, verifiedCountrySchemaUid);
-        string memory countryCode = parseCountryCode(verifiedCountryAttestation.data);
 
         return keccak256(verifiedAccountAttestation.data) == keccak256(abi.encodePacked(uint256(1)))
-            && keccak256(abi.encodePacked(countryCode)) != keccak256(abi.encodePacked("US"));
+            && keccak256(abi.encodePacked(parseCountryCode(verifiedCountryAttestation.data)))
+                != keccak256(abi.encodePacked("US"));
     }
 
     function getAttestation(address account, bytes32 schemaUid) public view returns (Attestation memory attestation) {
