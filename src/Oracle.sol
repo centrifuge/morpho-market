@@ -13,6 +13,6 @@ contract Oracle is IOracle {
     }
 
     function price() external view override returns (uint256) {
-        vault.convertToAssets(10 ** vault.shareDecimals());
+        return vault.convertToAssets(10 ** vault.shareDecimals());
     }
 }

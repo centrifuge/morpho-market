@@ -3,7 +3,7 @@ pragma solidity 0.8.21;
 
 import "forge-std/Test.sol";
 
-contract Mock is Test {
+contract BaseMock is Test {
     // counting calls
     mapping(bytes32 => uint256) public calls;
 
