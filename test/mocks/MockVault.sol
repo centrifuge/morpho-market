@@ -4,7 +4,7 @@ pragma solidity 0.8.21;
 import "./Mock.sol";
 
 contract MockVault is Mock {
-    constuctor (uint128 price) {
+    constructor(uint128 price) {
         values_uint128["price"] = price;
     }
 
