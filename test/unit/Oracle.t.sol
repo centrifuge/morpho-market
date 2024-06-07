@@ -7,7 +7,7 @@ import {MockVault} from "test/mocks/MockVault.sol";
 contract OracleTest is Test {
     Oracle oracle;
 
-    function setUp() public override {}
+    function setUp() public {}
 
     function test_Price(uint128 price) public {
         MockVault vault = new MockVault(price);
