@@ -19,15 +19,6 @@ interface IAttestationIndexer {
     function getAttestationUid(address recipient, bytes32 verifiedCountrySchemaUid) external view returns (bytes32);
 }
 
-/**
- * @dev Extension of the ERC-20 token contract to support token wrapping and transferring for permissioned addresses.
- *
- * Permissioned addresses are either those on the memberlist or those with both a VERIFIED_ACCOUNT attestation and a
- * VERIFIED_COUNTRY attestation of anything other than "US". Attestations are provided by Coinbase through the Ethereum
- * Attestation Service.
- *
- * // OpenZeppelin Contracts (last updated v5.0.0) (token/ERC20/extensions/ERC20Wrapper.sol)
- */
 struct Attestation {
     bytes32 uid; // A unique identifier of the attestation.
     bytes32 schema; // The unique identifier of the schema.
@@ -41,13 +32,16 @@ struct Attestation {
     bytes data; // Custom attestation data.
 }
 
+/// @title  PermissionedERC20Wrapper
+/// @dev    Extension of the ERC-20 token contract to support token wrapping and transferring for permissioned addresses.
+///
+///         Permissioned addresses are either those on the memberlist or those with both a VERIFIED_ACCOUNT attestation and a
+///         VERIFIED_COUNTRY attestation of anything other than "US". Attestations are provided by Coinbase
+///         through the Ethereum Attestation Service.
+/// @author Modified from OpenZeppelin Contracts v5.0.0 (token/ERC20/extensions/ERC20Wrapper.sol)
 contract PermissionedERC20Wrapper is Auth, ERC20, ERC20Wrapper, ERC20Permit {
-    // --- ERRORS ---
-
     /// @notice Thrown when `account` has no permission.
     error NoPermission(address account);
-
-    // --- IMMUTABLES ---
 
     /// @notice The address of the Morpho contract.
     address public immutable MORPHO;
