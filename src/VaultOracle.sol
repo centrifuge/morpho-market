@@ -26,7 +26,7 @@ contract VaultOracle is IOracle, Auth {
     }
 
     // --- Administration ---
-    function file(bytes32 what, address data) external auth {
+    function file(bytes32 what, address data) public auth {
         if (what == "vault") {
             _updateVault(data);
             emit File(what, data);
