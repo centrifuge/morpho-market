@@ -1,7 +1,8 @@
 pragma solidity ^0.8.13;
 
 import {Test} from "forge-std/Test.sol";
-import {Oracle, ERC7540Vault} from "src/Oracle.sol";
+import {Oracle} from "src/Oracle.sol";
+import {ERC7540Vault} from "liquidity-pools/src/ERC7540Vault.sol";
 import {BaseTest} from "liquidity-pools/test/BaseTest.sol";
 import {MathLib} from "src/libraries/MathLib.sol";
 
