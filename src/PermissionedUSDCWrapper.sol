@@ -3,12 +3,15 @@
 
 pragma solidity ^0.8.20;
 
-import {IERC20Metadata} from "./ERC20.sol";
-import {ERC20, ERC20Wrapper, ERC20Permit, IERC20} from "lib/erc20-permissioned/src/ERC20PermissionedBase.sol";
-import {SafeERC20} from "./SafeERC20.sol";
-import {Auth} from "./utils/Auth.sol";
-import {IERC20PermissionedBase} from "src/interfaces/IERC20PermissionedBase.sol";
+import {Auth} from "src/utils/Auth.sol";
 import {Memberlist} from "src/Memberlist.sol";
+import {IERC20PermissionedBase} from "src/interfaces/IERC20PermissionedBase.sol";
+import {ERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
+import {IERC20Metadata} from "lib/openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {SafeERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
+import {ERC20Wrapper} from "lib/openzeppelin-contracts/contracts/token/ERC20/extensions/ERC20Wrapper.sol";
+import {ERC20Permit} from "lib/openzeppelin-contracts/contracts/token/ERC20/extensions/ERC20Permit.sol";
 
 /**
  * @dev Extension of the ERC-20 token contract to support token wrapping and transferring for permissioned addresses.

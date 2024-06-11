@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import {Test, console2} from "forge-std/Test.sol";
-import {PermissionedUSDCWrapper, IERC20} from "src/PermissionedUSDCWrapper.sol";
 import {ERC20} from "src/ERC20.sol";
 import {Memberlist} from "src/Memberlist.sol";
+import {PermissionedUSDCWrapper, IERC20} from "src/PermissionedUSDCWrapper.sol";
+import {Test, console2} from "forge-std/Test.sol";
 
 contract PermissionedUSDCWrapperTest is Test {
     PermissionedUSDCWrapper wrappedUSDC;
