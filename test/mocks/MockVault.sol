@@ -12,8 +12,7 @@ contract MockVault is BaseMock {
         ERC20 testAsset = new ERC20(assetDecimals);
         asset = address(testAsset);
 
-        values_uint256["price"] = price;
-        //price * 10 ** uint128(assetDecimals);
+        values_uint256["price"] = price * 10 ** uint256(assetDecimals);
         values_uint8["shareDecimals"] = shareDecimals;
         values_address["asset"] = asset;
     }
@@ -24,9 +23,5 @@ contract MockVault is BaseMock {
 
     function shareDecimals() external view returns (uint8) {
         return values_uint8["shareDecimals"];
-    }
-
-    function asset() external view returns (address) {
-        return values_address["asset"];
     }
 }

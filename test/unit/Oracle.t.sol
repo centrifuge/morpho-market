@@ -13,19 +13,15 @@ contract OracleTest is Test {
 
     function setUp() public {}
 
-    function test_Price_unit(uint128 price, uint8 assetDecimals, uint8 shareDecimals) public {
-        vm.assume(assetDecimals <= 54);
-        vm.assume(shareDecimals <= 54);
-        vm.assume(price == 1);
+    function test_Price_unit(uint256 price, uint8 assetDecimals, uint8 shareDecimals) public {
+        vm.assume(assetDecimals <= 54 && assetDecimals > 0);
+        vm.assume(shareDecimals <= 54 && shareDecimals > 0);
+        vm.assume(price < 1000);
 
         MockVault vault = new MockVault(price, shareDecimals, assetDecimals);
         oracle = new Oracle(address(vault));
         uint256 oraclePrice = oracle.price();
 
-        // uint8 precisionDifference = 36 + assetDecimals - vault.shareDecimals();
-        // uint256 expectedPrice = MathLib.mulDiv(price, 10 ** precisionDifference, 10 ** assetDecimals);
-        // console.log("oraclePrice", oraclePrice);
-        // console.log("computedPrice", expectedPrice);
-        // assertEq(oraclePrice, expectedPrice);
+        assertEq(oraclePrice, price * 10 ** 36);
     }
 }
