@@ -1,7 +1,7 @@
 pragma solidity ^0.8.13;
 
 import {Test} from "forge-std/Test.sol";
-import {Oracle} from "src/Oracle.sol";
+import {VaultOracle} from "src/VaultOracle.sol";
 import {ERC7540Vault} from "liquidity-pools/src/ERC7540Vault.sol";
 import {BaseTest} from "liquidity-pools/test/BaseTest.sol";
 import {MathLib} from "src/libraries/MathLib.sol";
@@ -11,13 +11,13 @@ interface ERC20Like {
 }
 
 contract OracleTest is BaseTest {
-    Oracle oracle;
+    VaultOracle oracle;
     ERC7540Vault vault;
 
     function setUp() public override {
         super.setUp();
         vault = ERC7540Vault(deploySimpleVault());
-        oracle = new Oracle(address(vault));
+        oracle = new VaultOracle(address(vault));
     }
 
     function test_Price_ReturnsExpectedPrice(uint128 price) public {
