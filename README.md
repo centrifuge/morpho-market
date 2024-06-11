@@ -1,66 +1,22 @@
-## Foundry
+# Morpho Market
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+Contracts required for the real-world asset (RWA) Morpho market. Two main features:
+* `PermissionedERC20Wrapper`: an ERC20 wrapper that can be minted and transferred only to accounts that hold verified account and non-US verified country attestations, or have been manually added to the memberlist.
+* `VaultOracle`: Morpho-compatible oracle for ERC4626 vaults.
 
-Foundry consists of:
-
--   **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
--   **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
--   **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
--   **Chisel**: Fast, utilitarian, and verbose solidity REPL.
-
-## Documentation
-
-https://book.getfoundry.sh/
-
-## Usage
-
-### Build
-
-```shell
-$ forge build
+## Developing
+#### Getting started
+```sh
+git clone git@github.com:centrifuge/morpho-market.git
+cd morpho-market
+forge update
 ```
 
-### Test
-
-```shell
-$ forge test
+#### Testing
+To run all tests locally, where `[FORK_URL]` is a valid RPC endpoint for Base:
+```sh
+forge test --fork-url [FORK_URL]
 ```
 
-### Format
-
-```shell
-$ forge fmt
-```
-
-### Gas Snapshots
-
-```shell
-$ forge snapshot
-```
-
-### Anvil
-
-```shell
-$ anvil
-```
-
-### Deploy
-
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
-
-### Cast
-
-```shell
-$ cast <subcommand>
-```
-
-### Help
-
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
-```
+## License
+This codebase is licensed under [GNU Lesser General Public License v3.0](https://github.com/centrifuge/liquidity-pools/blob/main/LICENSE).
