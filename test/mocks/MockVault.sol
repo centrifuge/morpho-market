@@ -2,16 +2,24 @@
 pragma solidity 0.8.21;
 
 import "test/mocks/BaseMock.sol";
+import {ERC20} from "liquidity-pools/src/token/ERC20.sol";
 
 contract MockVault is BaseMock {
-    constructor(uint128 price, uint8 shareDecimals, address asset) {
-        values_uint128["price"] = price;
+    address public asset;
+
+    constructor(uint256 price, uint8 shareDecimals, uint8 assetDecimals) {
+        // create new ERC20 with asset decimals store address
+        ERC20 testAsset = new ERC20(assetDecimals);
+        asset = address(testAsset);
+
+        values_uint256["price"] = price;
+        //price * 10 ** uint128(assetDecimals);
         values_uint8["shareDecimals"] = shareDecimals;
         values_address["asset"] = asset;
     }
 
-    function convertToAssets(uint256 amount) external returns (uint128) {
-        return values_uint128["price"];
+    function convertToAssets(uint256 amount) external returns (uint256) {
+        return values_uint256["price"];
     }
 
     function shareDecimals() external view returns (uint8) {

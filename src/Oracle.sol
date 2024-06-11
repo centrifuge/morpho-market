@@ -14,14 +14,17 @@ interface IERC7540Vault {
 contract Oracle is IOracle {
     IERC7540Vault public vault;
     uint8 constant PRICE_DECIMALS = 36;
+    uint8 assetDecimals;
+    uint8 shareDecimals;
 
     constructor(address vault_) {
         vault = IERC7540Vault(vault_);
+        assetDecimals = IERC20Metadata(vault.asset()).decimals();
+        shareDecimals = vault.shareDecimals();
     }
 
     function price() external view override returns (uint256 price) {
-        uint256 priceInAssetDecimals = vault.convertToAssets(10 ** vault.shareDecimals());
-        uint8 assetDecimals = IERC20Metadata(vault.asset()).decimals();
+        uint256 priceInAssetDecimals = vault.convertToAssets(10 ** shareDecimals);
         if (assetDecimals == PRICE_DECIMALS) price = priceInAssetDecimals;
         else if (assetDecimals > PRICE_DECIMALS) price = priceInAssetDecimals / 10 ** (assetDecimals - PRICE_DECIMALS);
         else price = priceInAssetDecimals * 10 ** (PRICE_DECIMALS - assetDecimals);
