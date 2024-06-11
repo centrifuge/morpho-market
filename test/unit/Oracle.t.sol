@@ -13,7 +13,7 @@ contract OracleTest is Test {
 
     function setUp() public {}
 
-    function test_Price_unit(uint256 price, uint8 assetDecimals, uint8 shareDecimals) public {
+    function test_Price(uint256 price, uint8 assetDecimals, uint8 shareDecimals) public {
         vm.assume(assetDecimals <= 54 && assetDecimals > 0);
         vm.assume(shareDecimals <= 54 && shareDecimals > 0);
         vm.assume(price < 1000);
