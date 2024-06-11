@@ -1,13 +1,17 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import {ERC20} from "src/ERC20.sol";
+import {ERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 import {Memberlist} from "src/Memberlist.sol";
-import {PermissionedUSDCWrapper, IERC20} from "src/PermissionedUSDCWrapper.sol";
+import {PermissionedERC20Wrapper, IERC20} from "src/PermissionedERC20Wrapper.sol";
 import {Test, console2} from "forge-std/Test.sol";
 
-contract PermissionedUSDCWrapperTest is Test {
-    PermissionedUSDCWrapper wrappedUSDC;
+contract SimpleERC20 is ERC20 {
+    constructor(string memory name_, string memory symbol_) ERC20(name_, symbol_) {}
+}
+
+contract PermissionedERC20WrapperTest is Test {
+    PermissionedERC20Wrapper wrappedUSDC;
     Memberlist memberlist;
 
     address userUS;
@@ -19,9 +23,9 @@ contract PermissionedUSDCWrapperTest is Test {
     ERC20 usdc;
 
     function setUp() public {
-        usdc = new ERC20("USDC", "USDC");
+        usdc = new SimpleERC20("USDC", "USDC");
         memberlist = new Memberlist();
-        wrappedUSDC = new PermissionedUSDCWrapper(
+        wrappedUSDC = new PermissionedERC20Wrapper(
             "attested USDC",
             "aUSDC",
             IERC20(address(usdc)),
@@ -41,7 +45,7 @@ contract PermissionedUSDCWrapperTest is Test {
         userVerifiedAccountRevoked = address(0x67aEAe1Def34ACd37A785949edCb61b745491467);
 
         vm.label(address(usdc), "Test ERC20");
-        vm.label(address(wrappedUSDC), "PermissionedUSDCWrapper");
+        vm.label(address(wrappedUSDC), "PermissionedERC20Wrapper");
         vm.label(userUS, "US User");
         vm.label(userNonUS1, "Non-US User 1");
         vm.label(userNonUS2, "Non-US User 2");
@@ -112,7 +116,7 @@ contract PermissionedUSDCWrapperTest is Test {
         deal(address(usdc), userUS, 100);
         vm.startPrank(userUS);
         usdc.approve(address(wrappedUSDC), 100);
-        vm.expectRevert(abi.encodeWithSelector(PermissionedUSDCWrapper.NoPermission.selector, userUS));
+        vm.expectRevert(abi.encodeWithSelector(PermissionedERC20Wrapper.NoPermission.selector, userUS));
         wrappedUSDC.depositFor(userUS, 100);
         vm.stopPrank();
     }
@@ -178,7 +182,7 @@ contract PermissionedUSDCWrapperTest is Test {
 
     function test_transfer_FromPermissionedToNonPermissioned_Fails() public {
         deal(address(wrappedUSDC), userNonUS1, 100);
-        vm.expectRevert(abi.encodeWithSelector(PermissionedUSDCWrapper.NoPermission.selector, userUS));
+        vm.expectRevert(abi.encodeWithSelector(PermissionedERC20Wrapper.NoPermission.selector, userUS));
         vm.prank(userNonUS1);
         wrappedUSDC.transfer(userUS, 100);
     }

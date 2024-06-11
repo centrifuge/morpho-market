@@ -1,6 +1,4 @@
-// SPDX-License-Identifier: MIT
-// OpenZeppelin Contracts (last updated v5.0.0) (token/ERC20/extensions/ERC20Wrapper.sol)
-
+// SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.20;
 
 import {Auth} from "src/utils/Auth.sol";
@@ -13,18 +11,11 @@ import {IERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.so
 import {ERC20Wrapper} from "lib/openzeppelin-contracts/contracts/token/ERC20/extensions/ERC20Wrapper.sol";
 import {ERC20Permit} from "lib/openzeppelin-contracts/contracts/token/ERC20/extensions/ERC20Permit.sol";
 
-/**
- * @dev Extension of the ERC-20 token contract to support token wrapping and transferring for permissioned addresses.
- *
- * Permissioned addresses are either those on the memberlist or those with both a VERIFIED_ACCOUNT attestation and a
- * VERIFIED_COUNTRY attestation of anything other than "US". Attestations are provided by Coinbase through the Ethereum
- * Attestation Service.
- */
-interface AttestationService {
+interface IAttestationService {
     function getAttestation(bytes32 uid) external view returns (Attestation memory);
 }
 
-interface AttestationIndexer {
+interface IAttestationIndexer {
     function getAttestationUid(address recipient, bytes32 verifiedCountrySchemaUid) external view returns (bytes32);
 }
 
@@ -41,13 +32,16 @@ struct Attestation {
     bytes data; // Custom attestation data.
 }
 
-contract PermissionedUSDCWrapper is Auth, ERC20, ERC20Wrapper, ERC20Permit {
-    // --- ERRORS ---
-
+/// @title  PermissionedERC20Wrapper
+/// @dev    Extension of the ERC-20 token contract to support token wrapping and transferring for permissioned addresses.
+///
+///         Permissioned addresses are either those on the memberlist or those with both a VERIFIED_ACCOUNT attestation and a
+///         VERIFIED_COUNTRY attestation of anything other than "US". Attestations are provided by Coinbase
+///         through the Ethereum Attestation Service.
+/// @author Modified from OpenZeppelin Contracts v5.0.0 (token/ERC20/extensions/ERC20Wrapper.sol)
+contract PermissionedERC20Wrapper is Auth, ERC20, ERC20Wrapper, ERC20Permit {
     /// @notice Thrown when `account` has no permission.
     error NoPermission(address account);
-
-    // --- IMMUTABLES ---
 
     /// @notice The address of the Morpho contract.
     address public immutable MORPHO;
@@ -61,8 +55,8 @@ contract PermissionedUSDCWrapper is Auth, ERC20, ERC20Wrapper, ERC20Permit {
     bytes32 verifiedCountrySchemaUid = 0x1801901fabd0e6189356b4fb52bb0ab855276d84f7ec140839fbd1f6801ca065;
     bytes32 verifiedAccountSchemaUid = 0xf8b05c79f090979bf4a80270aba232dff11a10d9ca55c4f88de95317970f0de9;
 
-    AttestationService public attestationService;
-    AttestationIndexer public attestationIndexer;
+    IAttestationService public attestationService;
+    IAttestationIndexer public attestationIndexer;
     Memberlist public memberlist;
 
     constructor(
@@ -77,8 +71,8 @@ contract PermissionedUSDCWrapper is Auth, ERC20, ERC20Wrapper, ERC20Permit {
     ) ERC20Wrapper(underlyingToken_) ERC20Permit(name_) ERC20(name_, symbol_) {
         MORPHO = morpho_;
         BUNDLER = bundler_;
-        attestationService = AttestationService(attestationService_);
-        attestationIndexer = AttestationIndexer(attestationIndexer_);
+        attestationService = IAttestationService(attestationService_);
+        attestationIndexer = IAttestationIndexer(attestationIndexer_);
         memberlist = Memberlist(memberlist_);
         if (address(underlyingToken_) == address(this)) {
             revert ERC20InvalidUnderlying(address(this));
@@ -89,13 +83,15 @@ contract PermissionedUSDCWrapper is Auth, ERC20, ERC20Wrapper, ERC20Permit {
         emit Rely(msg.sender);
     }
 
+    // --- Administration ---
     function file(bytes32 what, address data) external auth {
-        if (what == "indexer") attestationIndexer = AttestationIndexer(data);
-        else if (what == "service") attestationService = AttestationService(data);
+        if (what == "indexer") attestationIndexer = IAttestationIndexer(data);
+        else if (what == "service") attestationService = IAttestationService(data);
         else if (what == "memberlist") memberlist = Memberlist(data);
         else revert("USDCWrapper/file-unrecognized-param");
     }
 
+    // --- ERC20 wrapping ---
     /**
      * @dev See {ERC20-decimals}.
      */
@@ -135,6 +131,13 @@ contract PermissionedUSDCWrapper is Auth, ERC20, ERC20Wrapper, ERC20Permit {
         return true;
     }
 
+    function _update(address from, address to, uint256 value) internal virtual override {
+        if (!hasPermission(to)) revert NoPermission(to);
+
+        super._update(from, to, value);
+    }
+
+    // --- Permission checks ---
     function hasPermission(address account) public view returns (bool attested) {
         if (
             account == address(this) || account == address(0) || account == MORPHO || account == BUNDLER
@@ -144,7 +147,6 @@ contract PermissionedUSDCWrapper is Auth, ERC20, ERC20Wrapper, ERC20Permit {
         }
 
         Attestation memory verifiedAccountAttestation = getAttestation(account, verifiedAccountSchemaUid);
-
         Attestation memory verifiedCountryAttestation = getAttestation(account, verifiedCountrySchemaUid);
 
         return keccak256(verifiedAccountAttestation.data) == keccak256(abi.encodePacked(uint256(1)))
@@ -160,21 +162,11 @@ contract PermissionedUSDCWrapper is Auth, ERC20, ERC20Wrapper, ERC20Permit {
         require(attestation.revocationTime == 0, "USDCWrapper: attestation revoked");
     }
 
-    /**
-     * @dev Mint wrapped token to cover any underlyingTokens that would have been transferred by mistake or acquired from
-     * rebasing mechanisms.
-     */
+    // --- Helpers ---
     function recover(address account) public auth returns (uint256) {
         _recover(account);
     }
 
-    function _update(address from, address to, uint256 value) internal virtual override {
-        if (!hasPermission(to)) revert NoPermission(to);
-
-        super._update(from, to, value);
-    }
-
-    // --- HELPERS ---
     function parseCountryCode(bytes memory data) internal pure returns (string memory) {
         require(data.length >= 66, "USDCWrapper: invalid attestation data");
         // Country code is two bytes long and begins at the 65th byte
