@@ -7,7 +7,6 @@ contract Memberlist is Auth {
     mapping(address => uint256) public members;
 
     // --- Events ---
-
     event MemberAdded(address member);
     event MemberRemoved(address member);
 
@@ -17,7 +16,6 @@ contract Memberlist is Auth {
     }
 
     // --- Memberlist Management
-
     function addMember(address member) external auth {
         require(members[member] == 0, "Memberlist: member already exists");
         members[member] = 1;

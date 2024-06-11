@@ -5,28 +5,28 @@ import {IOracle} from "src/interfaces/IOracle.sol";
 import {IERC20Metadata} from "lib/openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {MathLib} from "src/libraries/MathLib.sol";
 
-interface IERC7540Vault {
+interface IERC4626 {
     function share() external view returns (address share);
     function asset() external view returns (address asset);
     function convertToAssets(uint256 shares) external view returns (uint256 assets);
 }
 
 contract VaultOracle is IOracle {
-    IERC7540Vault public vault;
+    IERC4626 public vault;
     uint8 constant PRICE_DECIMALS = 36;
     uint8 assetDecimals;
     uint8 shareDecimals;
 
     constructor(address vault_) {
-        vault = IERC7540Vault(vault_);
+        vault = IERC4626(vault_);
         assetDecimals = IERC20Metadata(vault.asset()).decimals();
-        shareDecimals =  IERC20Metadata(vault.share()).decimals();
+        shareDecimals = IERC20Metadata(vault.share()).decimals();
     }
 
-    function price() external view override returns (uint256 price) {
+    function price() external view override returns (uint256) {
         uint256 priceInAssetDecimals = vault.convertToAssets(10 ** shareDecimals);
-        if (assetDecimals == PRICE_DECIMALS) price = priceInAssetDecimals;
-        else if (assetDecimals > PRICE_DECIMALS) price = priceInAssetDecimals / 10 ** (assetDecimals - PRICE_DECIMALS);
-        else price = priceInAssetDecimals * 10 ** (PRICE_DECIMALS - assetDecimals);
+        if (assetDecimals == PRICE_DECIMALS) return priceInAssetDecimals;
+        else if (assetDecimals > PRICE_DECIMALS) return priceInAssetDecimals / 10 ** (assetDecimals - PRICE_DECIMALS);
+        else return priceInAssetDecimals * 10 ** (PRICE_DECIMALS - assetDecimals);
     }
 }
