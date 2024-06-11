@@ -83,6 +83,7 @@ contract PermissionedERC20Wrapper is Auth, ERC20, ERC20Wrapper, ERC20Permit {
         emit Rely(msg.sender);
     }
 
+    // --- Administration ---
     function file(bytes32 what, address data) external auth {
         if (what == "indexer") attestationIndexer = IAttestationIndexer(data);
         else if (what == "service") attestationService = IAttestationService(data);
@@ -90,6 +91,7 @@ contract PermissionedERC20Wrapper is Auth, ERC20, ERC20Wrapper, ERC20Permit {
         else revert("USDCWrapper/file-unrecognized-param");
     }
 
+    // --- ERC20 wrapping ---
     /**
      * @dev See {ERC20-decimals}.
      */
@@ -129,6 +131,13 @@ contract PermissionedERC20Wrapper is Auth, ERC20, ERC20Wrapper, ERC20Permit {
         return true;
     }
 
+    function _update(address from, address to, uint256 value) internal virtual override {
+        if (!hasPermission(to)) revert NoPermission(to);
+
+        super._update(from, to, value);
+    }
+
+    // --- Permission checks ---
     function hasPermission(address account) public view returns (bool attested) {
         if (
             account == address(this) || account == address(0) || account == MORPHO || account == BUNDLER
@@ -153,21 +162,11 @@ contract PermissionedERC20Wrapper is Auth, ERC20, ERC20Wrapper, ERC20Permit {
         require(attestation.revocationTime == 0, "USDCWrapper: attestation revoked");
     }
 
-    /**
-     * @dev Mint wrapped token to cover any underlyingTokens that would have been transferred by mistake or acquired from
-     * rebasing mechanisms.
-     */
+    // --- Helpers ---
     function recover(address account) public auth returns (uint256) {
         _recover(account);
     }
 
-    function _update(address from, address to, uint256 value) internal virtual override {
-        if (!hasPermission(to)) revert NoPermission(to);
-
-        super._update(from, to, value);
-    }
-
-    // --- HELPERS ---
     function parseCountryCode(bytes memory data) internal pure returns (string memory) {
         require(data.length >= 66, "USDCWrapper: invalid attestation data");
         // Country code is two bytes long and begins at the 65th byte

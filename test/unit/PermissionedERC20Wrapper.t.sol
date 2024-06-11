@@ -6,7 +6,7 @@ import {Memberlist} from "src/Memberlist.sol";
 import {PermissionedERC20Wrapper, IERC20} from "src/PermissionedERC20Wrapper.sol";
 import {Test, console2} from "forge-std/Test.sol";
 
-contract SimpleERC20 is ERC20 { 
+contract SimpleERC20 is ERC20 {
     constructor(string memory name_, string memory symbol_) ERC20(name_, symbol_) {}
 }
 
