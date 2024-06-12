@@ -70,13 +70,12 @@ contract PermissionedERC20Wrapper is Auth, ERC20PermissionedBase {
         else revert("PermissionedERC20Wrapper/file-unrecognized-param");
     }
 
-    // --- ERC20 wrapping ---
+    // --- Permission checks ---
     function _update(address from, address to, uint256 value) internal virtual override {
         require(hasPermission(to), "PermissionedERC20Wrapper/no-permission");
         super._update(from, to, value);
     }
 
-    // --- Permission checks ---
     function hasPermission(address account) public view override returns (bool attested) {
         if (
             account == address(this) || account == address(0) || account == MORPHO || account == BUNDLER

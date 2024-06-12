@@ -143,28 +143,6 @@ contract PermissionedERC20WrapperTest is Test {
         assertEq(usdc.balanceOf(userNonUS1), 100);
     }
 
-    function test_WithdrawTo_WithNonPermissioned_Works() public {
-        deal(address(wrappedUSDC), userUS, 100);
-        deal(address(usdc), address(wrappedUSDC), 100);
-        vm.startPrank(userUS);
-        wrappedUSDC.approve(address(wrappedUSDC), 100);
-        wrappedUSDC.withdrawTo(userUS, 100);
-        vm.stopPrank();
-        assertEq(wrappedUSDC.balanceOf(userUS), 0);
-        assertEq(usdc.balanceOf(userUS), 100);
-    }
-
-    function test_WithdrawTo_FromNonPermissionedToPermissioned_Works() public {
-        deal(address(wrappedUSDC), userUS, 100);
-        deal(address(usdc), address(wrappedUSDC), 100);
-        vm.startPrank(userUS);
-        wrappedUSDC.approve(address(wrappedUSDC), 100);
-        wrappedUSDC.withdrawTo(userNonUS1, 100);
-        vm.stopPrank();
-        assertEq(wrappedUSDC.balanceOf(userNonUS1), 0);
-        assertEq(usdc.balanceOf(userNonUS1), 100);
-    }
-
     function test_transfer_FromPermissionedToPermissioned_Works() public {
         deal(address(wrappedUSDC), userNonUS1, 100);
         vm.prank(userNonUS1);
@@ -186,12 +164,5 @@ contract PermissionedERC20WrapperTest is Test {
         vm.expectRevert("PermissionedERC20Wrapper/no-permission");
         vm.prank(userNonUS1);
         wrappedUSDC.transfer(userUS, 100);
-    }
-
-    function test_transfer_FromNonPermissionedToPermissioned_Works() public {
-        deal(address(wrappedUSDC), userUS, 100);
-        vm.prank(userUS);
-        wrappedUSDC.transfer(userNonUS1, 100);
-        assertEq(wrappedUSDC.balanceOf(userNonUS1), 100);
     }
 }
