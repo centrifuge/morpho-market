@@ -1,15 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.20;
 
-import {Auth} from "src/utils/Auth.sol";
+import {Auth} from "src/Auth.sol";
 import {Memberlist} from "src/Memberlist.sol";
-import {IERC20PermissionedBase} from "src/interfaces/IERC20PermissionedBase.sol";
 import {ERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
-import {IERC20Metadata} from "lib/openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {SafeERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
-import {IERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol";
 import {ERC20Wrapper} from "lib/openzeppelin-contracts/contracts/token/ERC20/extensions/ERC20Wrapper.sol";
 import {ERC20Permit} from "lib/openzeppelin-contracts/contracts/token/ERC20/extensions/ERC20Permit.sol";
+import {IERC20Metadata} from "lib/openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 interface IAttestationService {
     function getAttestation(bytes32 uid) external view returns (Attestation memory);
@@ -43,6 +41,11 @@ contract PermissionedERC20Wrapper is Auth, ERC20, ERC20Wrapper, ERC20Permit {
     /// @notice Thrown when `account` has no permission.
     error NoPermission(address account);
 
+    bytes32 public constant verifiedCountrySchemaUid =
+        0x1801901fabd0e6189356b4fb52bb0ab855276d84f7ec140839fbd1f6801ca065;
+    bytes32 public constant verifiedAccountSchemaUid =
+        0xf8b05c79f090979bf4a80270aba232dff11a10d9ca55c4f88de95317970f0de9;
+
     /// @notice The address of the Morpho contract.
     address public immutable MORPHO;
 
@@ -50,19 +53,16 @@ contract PermissionedERC20Wrapper is Auth, ERC20, ERC20Wrapper, ERC20Permit {
     address public immutable BUNDLER;
 
     /// @notice The underlying token.
-    IERC20 private immutable _underlying;
+    IERC20Metadata public immutable _underlying;
 
-    bytes32 verifiedCountrySchemaUid = 0x1801901fabd0e6189356b4fb52bb0ab855276d84f7ec140839fbd1f6801ca065;
-    bytes32 verifiedAccountSchemaUid = 0xf8b05c79f090979bf4a80270aba232dff11a10d9ca55c4f88de95317970f0de9;
-
+    Memberlist public memberlist;
     IAttestationService public attestationService;
     IAttestationIndexer public attestationIndexer;
-    Memberlist public memberlist;
 
     constructor(
         string memory name_,
         string memory symbol_,
-        IERC20 underlyingToken_,
+        IERC20Metadata underlyingToken_,
         address morpho_,
         address bundler_,
         address attestationService_,
