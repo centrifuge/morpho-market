@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 import {IOracle} from "src/interfaces/IOracle.sol";
 import {IERC20Metadata} from "lib/openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import {MathLib} from "src/libraries/MathLib.sol";
+import {Auth} from "liquidity-pools/src/Auth.sol";
 
 interface IERC4626 {
     function share() external view returns (address share);
@@ -11,16 +11,28 @@ interface IERC4626 {
     function convertToAssets(uint256 shares) external view returns (uint256 assets);
 }
 
-contract VaultOracle is IOracle {
+contract VaultOracle is IOracle, Auth {
     IERC4626 public vault;
-    uint8 constant PRICE_DECIMALS = 36;
-    uint8 assetDecimals;
-    uint8 shareDecimals;
+    uint8 public constant PRICE_DECIMALS = 36;
+    uint8 public assetDecimals;
+    uint8 public shareDecimals;
+
+    // --- Events ---
+    event File(bytes32 indexed what, address data);
 
     constructor(address vault_) {
-        vault = IERC4626(vault_);
-        assetDecimals = IERC20Metadata(vault.asset()).decimals();
-        shareDecimals = IERC20Metadata(vault.share()).decimals();
+        _updateVault(vault_);
+        wards[msg.sender] = 1;
+    }
+
+    // --- Administration ---
+    function file(bytes32 what, address data) public auth {
+        if (what == "vault") {
+            _updateVault(data);
+            emit File(what, data);
+        } else {
+            revert("VaultOracle/file-unrecognized-param");
+        }
     }
 
     function price() external view override returns (uint256) {
@@ -28,5 +40,11 @@ contract VaultOracle is IOracle {
         if (assetDecimals == PRICE_DECIMALS) return priceInAssetDecimals;
         else if (assetDecimals > PRICE_DECIMALS) return priceInAssetDecimals / 10 ** (assetDecimals - PRICE_DECIMALS);
         else return priceInAssetDecimals * 10 ** (PRICE_DECIMALS - assetDecimals);
+    }
+
+    function _updateVault(address vault_) internal {
+        vault = IERC4626(vault_);
+        assetDecimals = IERC20Metadata(vault.asset()).decimals();
+        shareDecimals = IERC20Metadata(vault.share()).decimals();
     }
 }
