@@ -161,7 +161,7 @@ contract PermissionedERC20Wrapper is Auth, ERC20, ERC20Wrapper, ERC20Permit {
 
     // --- Helpers ---
     function recover(address account) public auth returns (uint256) {
-        _recover(account);
+        return _recover(account);
     }
 
     function parseCountryCode(bytes memory data) internal pure returns (string memory) {
