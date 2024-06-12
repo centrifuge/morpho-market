@@ -116,7 +116,7 @@ contract PermissionedERC20WrapperTest is Test {
         deal(address(usdc), userUS, 100);
         vm.startPrank(userUS);
         usdc.approve(address(wrappedUSDC), 100);
-        vm.expectRevert(abi.encodeWithSelector(PermissionedERC20Wrapper.NoPermission.selector, userUS));
+        vm.expectRevert("PermissionedERC20Wrapper/no-permission");
         wrappedUSDC.depositFor(userUS, 100);
         vm.stopPrank();
     }
@@ -182,7 +182,7 @@ contract PermissionedERC20WrapperTest is Test {
 
     function test_transfer_FromPermissionedToNonPermissioned_Fails() public {
         deal(address(wrappedUSDC), userNonUS1, 100);
-        vm.expectRevert(abi.encodeWithSelector(PermissionedERC20Wrapper.NoPermission.selector, userUS));
+        vm.expectRevert("PermissionedERC20Wrapper/no-permission");
         vm.prank(userNonUS1);
         wrappedUSDC.transfer(userUS, 100);
     }
