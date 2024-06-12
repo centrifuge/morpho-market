@@ -17,13 +17,13 @@ contract Memberlist is Auth {
 
     // --- Memberlist Management
     function addMember(address member) external auth {
-        require(members[member] == 0, "Memberlist: member already exists");
+        require(members[member] == 0, "Memberlist/member-already-exists");
         members[member] = 1;
         emit MemberAdded(member);
     }
 
     function removeMember(address member) external auth {
-        require(members[member] == 1, "Memberlist: member does not exist");
+        require(members[member] == 1, "Memberlist/member-does-not-exist");
         members[member] = 0;
         emit MemberRemoved(member);
     }

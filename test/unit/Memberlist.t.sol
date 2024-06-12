@@ -24,7 +24,7 @@ contract MemberlistTest is Test {
 
     function test_AddMember_ThatAlreadyExists_Fails() public {
         memberlist.addMember(address(1));
-        vm.expectRevert("Memberlist: member already exists");
+        vm.expectRevert("Memberlist/member-already-exists");
         memberlist.addMember(address(1));
     }
 
@@ -43,7 +43,7 @@ contract MemberlistTest is Test {
     }
 
     function test_RemoveMember_ThatDoesNotExist_Fails() public {
-        vm.expectRevert("Memberlist: member does not exist");
+        vm.expectRevert("Memberlist/member-does-not-exist");
         memberlist.removeMember(address(1));
     }
 }
