@@ -38,9 +38,6 @@ struct Attestation {
 ///         through the Ethereum Attestation Service.
 /// @author Modified from OpenZeppelin Contracts v5.0.0 (token/ERC20/extensions/ERC20Wrapper.sol)
 contract PermissionedERC20Wrapper is Auth, ERC20, ERC20Wrapper, ERC20Permit {
-    /// @notice Thrown when `account` has no permission.
-    error NoPermission(address account);
-
     bytes32 public constant verifiedCountrySchemaUid =
         0x1801901fabd0e6189356b4fb52bb0ab855276d84f7ec140839fbd1f6801ca065;
     bytes32 public constant verifiedAccountSchemaUid =
@@ -113,8 +110,7 @@ contract PermissionedERC20Wrapper is Auth, ERC20, ERC20Wrapper, ERC20Permit {
     }
 
     function _update(address from, address to, uint256 value) internal virtual override {
-        if (!hasPermission(to)) revert NoPermission(to);
-
+        require(hasPermission(to), "PermissionedERC20Wrapper/no-permission");
         super._update(from, to, value);
     }
 
