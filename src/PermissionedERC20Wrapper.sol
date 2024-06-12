@@ -3,10 +3,7 @@ pragma solidity ^0.8.20;
 
 import {Memberlist} from "src/Memberlist.sol";
 import {Auth} from "lib/liquidity-pools/src/Auth.sol";
-import {ERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
-import {SafeERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
-import {ERC20Wrapper} from "lib/openzeppelin-contracts/contracts/token/ERC20/extensions/ERC20Wrapper.sol";
-import {ERC20Permit} from "lib/openzeppelin-contracts/contracts/token/ERC20/extensions/ERC20Permit.sol";
+import {ERC20PermissionedBase, IERC20} from "lib/erc20-permissioned/src/ERC20PermissionedBase.sol";
 import {IERC20Metadata} from "lib/openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 interface IAttestationService {
@@ -37,20 +34,11 @@ struct Attestation {
 ///         VERIFIED_COUNTRY attestation of anything other than "US". Attestations are provided by Coinbase
 ///         through the Ethereum Attestation Service.
 /// @author Modified from OpenZeppelin Contracts v5.0.0 (token/ERC20/extensions/ERC20Wrapper.sol)
-contract PermissionedERC20Wrapper is Auth, ERC20, ERC20Wrapper, ERC20Permit {
+contract PermissionedERC20Wrapper is Auth, ERC20PermissionedBase {
     bytes32 public constant verifiedCountrySchemaUid =
         0x1801901fabd0e6189356b4fb52bb0ab855276d84f7ec140839fbd1f6801ca065;
     bytes32 public constant verifiedAccountSchemaUid =
         0xf8b05c79f090979bf4a80270aba232dff11a10d9ca55c4f88de95317970f0de9;
-
-    /// @notice The address of the Morpho contract.
-    address public immutable MORPHO;
-
-    /// @notice The address of the Bundler contract.
-    address public immutable BUNDLER;
-
-    /// @notice The underlying token.
-    IERC20Metadata public immutable _underlying;
 
     Memberlist public memberlist;
     IAttestationService public attestationService;
@@ -59,20 +47,16 @@ contract PermissionedERC20Wrapper is Auth, ERC20, ERC20Wrapper, ERC20Permit {
     constructor(
         string memory name_,
         string memory symbol_,
-        IERC20Metadata underlyingToken_,
+        IERC20 underlyingToken_,
         address morpho_,
         address bundler_,
         address attestationService_,
         address attestationIndexer_,
         address memberlist_
-    ) ERC20Wrapper(underlyingToken_) ERC20Permit(name_) ERC20(name_, symbol_) {
-        MORPHO = morpho_;
-        BUNDLER = bundler_;
+    ) ERC20PermissionedBase(name_, symbol_, underlyingToken_, morpho_, bundler_) {
         attestationService = IAttestationService(attestationService_);
         attestationIndexer = IAttestationIndexer(attestationIndexer_);
         memberlist = Memberlist(memberlist_);
-        if (address(underlyingToken_) == address(this)) revert ERC20InvalidUnderlying(address(this));
-        _underlying = underlyingToken_;
 
         wards[msg.sender] = 1;
         emit Rely(msg.sender);
@@ -87,43 +71,13 @@ contract PermissionedERC20Wrapper is Auth, ERC20, ERC20Wrapper, ERC20Permit {
     }
 
     // --- ERC20 wrapping ---
-    /**
-     * @dev Allow a user to deposit underlying tokens and mint the corresponding number of wrapped tokens.
-     */
-    function depositFor(address account, uint256 value) public override returns (bool) {
-        address sender = _msgSender();
-        if (sender == address(this)) revert ERC20InvalidSender(address(this));
-        if (account == address(this)) revert ERC20InvalidReceiver(account);
-        SafeERC20.safeTransferFrom(_underlying, sender, address(this), value);
-        _mint(account, value);
-        return true;
-    }
-
-    /**
-     * @dev Allow a user to burn a number of wrapped tokens and withdraw the corresponding number of underlying tokens.
-     */
-    function withdrawTo(address account, uint256 value) public override returns (bool) {
-        if (account == address(this)) revert ERC20InvalidReceiver(account);
-        _burn(_msgSender(), value);
-        SafeERC20.safeTransfer(_underlying, account, value);
-        return true;
-    }
-
     function _update(address from, address to, uint256 value) internal virtual override {
         require(hasPermission(to), "PermissionedERC20Wrapper/no-permission");
         super._update(from, to, value);
     }
 
-    function decimals() public view virtual override(ERC20, ERC20Wrapper) returns (uint8) {
-        try IERC20Metadata(address(_underlying)).decimals() returns (uint8 value) {
-            return value;
-        } catch {
-            return super.decimals();
-        }
-    }
-
     // --- Permission checks ---
-    function hasPermission(address account) public view returns (bool attested) {
+    function hasPermission(address account) public view override returns (bool attested) {
         if (
             account == address(this) || account == address(0) || account == MORPHO || account == BUNDLER
                 || memberlist.isMember(account)

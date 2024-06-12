@@ -3,8 +3,9 @@ pragma solidity ^0.8.13;
 
 import {ERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 import {Memberlist} from "src/Memberlist.sol";
-import {PermissionedERC20Wrapper, IERC20Metadata} from "src/PermissionedERC20Wrapper.sol";
+import {PermissionedERC20Wrapper} from "src/PermissionedERC20Wrapper.sol";
 import {Test} from "forge-std/Test.sol";
+import {IERC20} from "lib/erc20-permissioned/src/ERC20PermissionedBase.sol";
 
 contract SimpleERC20 is ERC20 {
     constructor(string memory name_, string memory symbol_) ERC20(name_, symbol_) {}
@@ -28,7 +29,7 @@ contract PermissionedERC20WrapperTest is Test {
         wrappedUSDC = new PermissionedERC20Wrapper(
             "attested USDC",
             "aUSDC",
-            IERC20Metadata(address(usdc)),
+            IERC20(address(usdc)),
             address(0),
             address(0),
             address(0x4200000000000000000000000000000000000021),
