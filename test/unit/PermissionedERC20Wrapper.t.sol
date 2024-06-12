@@ -4,6 +4,7 @@ pragma solidity ^0.8.13;
 import {ERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 import {Memberlist} from "src/Memberlist.sol";
 import {PermissionedERC20Wrapper} from "src/PermissionedERC20Wrapper.sol";
+import {ERC20PermissionedBase, IERC20} from "lib/erc20-permissioned/src/ERC20PermissionedBase.sol";
 import {Test} from "forge-std/Test.sol";
 import {IERC20} from "lib/erc20-permissioned/src/ERC20PermissionedBase.sol";
 
@@ -117,7 +118,7 @@ contract PermissionedERC20WrapperTest is Test {
         deal(address(usdc), userUS, 100);
         vm.startPrank(userUS);
         usdc.approve(address(wrappedUSDC), 100);
-        vm.expectRevert("PermissionedERC20Wrapper/no-permission");
+        vm.expectRevert(abi.encodeWithSelector(ERC20PermissionedBase.NoPermission.selector, userUS));
         wrappedUSDC.depositFor(userUS, 100);
         vm.stopPrank();
     }
@@ -161,7 +162,7 @@ contract PermissionedERC20WrapperTest is Test {
 
     function test_transfer_FromPermissionedToNonPermissioned_Fails() public {
         deal(address(wrappedUSDC), userNonUS1, 100);
-        vm.expectRevert("PermissionedERC20Wrapper/no-permission");
+        vm.expectRevert(abi.encodeWithSelector(ERC20PermissionedBase.NoPermission.selector, userUS));
         vm.prank(userNonUS1);
         wrappedUSDC.transfer(userUS, 100);
     }

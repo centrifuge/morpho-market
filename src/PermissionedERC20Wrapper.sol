@@ -72,10 +72,7 @@ contract PermissionedERC20Wrapper is Auth, ERC20PermissionedBase {
 
     // --- Permission checks ---
     function hasPermission(address account) public view override returns (bool attested) {
-        if (
-            account == address(this) || account == address(0) || account == MORPHO || account == BUNDLER
-                || memberlist.isMember(account)
-        ) {
+        if (super.hasPermission(account) || memberlist.isMember(account)) {
             return true;
         }
 
