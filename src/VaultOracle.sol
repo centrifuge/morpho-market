@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.20;
 
-import {Auth} from "src/Auth.sol";
 import {IOracle} from "src/interfaces/IOracle.sol";
+import {Auth} from "lib/liquidity-pools/src/Auth.sol";
 import {IERC20Metadata} from "lib/openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 interface IERC4626 {

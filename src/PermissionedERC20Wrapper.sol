@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.20;
 
-import {Auth} from "src/Auth.sol";
 import {Memberlist} from "src/Memberlist.sol";
+import {Auth} from "lib/liquidity-pools/src/Auth.sol";
 import {ERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 import {SafeERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ERC20Wrapper} from "lib/openzeppelin-contracts/contracts/token/ERC20/extensions/ERC20Wrapper.sol";
@@ -74,9 +74,7 @@ contract PermissionedERC20Wrapper is Auth, ERC20, ERC20Wrapper, ERC20Permit {
         attestationService = IAttestationService(attestationService_);
         attestationIndexer = IAttestationIndexer(attestationIndexer_);
         memberlist = Memberlist(memberlist_);
-        if (address(underlyingToken_) == address(this)) {
-            revert ERC20InvalidUnderlying(address(this));
-        }
+        if (address(underlyingToken_) == address(this)) revert ERC20InvalidUnderlying(address(this));
         _underlying = underlyingToken_;
 
         wards[msg.sender] = 1;
@@ -97,12 +95,8 @@ contract PermissionedERC20Wrapper is Auth, ERC20, ERC20Wrapper, ERC20Permit {
      */
     function depositFor(address account, uint256 value) public override returns (bool) {
         address sender = _msgSender();
-        if (sender == address(this)) {
-            revert ERC20InvalidSender(address(this));
-        }
-        if (account == address(this)) {
-            revert ERC20InvalidReceiver(account);
-        }
+        if (sender == address(this)) revert ERC20InvalidSender(address(this));
+        if (account == address(this)) revert ERC20InvalidReceiver(account);
         SafeERC20.safeTransferFrom(_underlying, sender, address(this), value);
         _mint(account, value);
         return true;
@@ -112,9 +106,7 @@ contract PermissionedERC20Wrapper is Auth, ERC20, ERC20Wrapper, ERC20Permit {
      * @dev Allow a user to burn a number of wrapped tokens and withdraw the corresponding number of underlying tokens.
      */
     function withdrawTo(address account, uint256 value) public override returns (bool) {
-        if (account == address(this)) {
-            revert ERC20InvalidReceiver(account);
-        }
+        if (account == address(this)) revert ERC20InvalidReceiver(account);
         _burn(_msgSender(), value);
         SafeERC20.safeTransfer(_underlying, account, value);
         return true;
