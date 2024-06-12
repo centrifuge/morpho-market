@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.20;
 
-import {Auth} from "src/Auth.sol";
 import {Memberlist} from "src/Memberlist.sol";
+import {Auth} from "lib/liquidity-pools/src/Auth.sol";
 import {ERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
 import {SafeERC20} from "lib/openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ERC20Wrapper} from "lib/openzeppelin-contracts/contracts/token/ERC20/extensions/ERC20Wrapper.sol";
@@ -74,9 +74,7 @@ contract PermissionedERC20Wrapper is Auth, ERC20, ERC20Wrapper, ERC20Permit {
         attestationService = IAttestationService(attestationService_);
         attestationIndexer = IAttestationIndexer(attestationIndexer_);
         memberlist = Memberlist(memberlist_);
-        if (address(underlyingToken_) == address(this)) {
-            revert ERC20InvalidUnderlying(address(this));
-        }
+        if (address(underlyingToken_) == address(this)) revert ERC20InvalidUnderlying(address(this));
         _underlying = underlyingToken_;
 
         wards[msg.sender] = 1;
@@ -88,32 +86,17 @@ contract PermissionedERC20Wrapper is Auth, ERC20, ERC20Wrapper, ERC20Permit {
         if (what == "indexer") attestationIndexer = IAttestationIndexer(data);
         else if (what == "service") attestationService = IAttestationService(data);
         else if (what == "memberlist") memberlist = Memberlist(data);
-        else revert("USDCWrapper/file-unrecognized-param");
+        else revert("PermissionedERC20Wrapper/file-unrecognized-param");
     }
 
     // --- ERC20 wrapping ---
-    /**
-     * @dev See {ERC20-decimals}.
-     */
-    function decimals() public view virtual override(ERC20, ERC20Wrapper) returns (uint8) {
-        try IERC20Metadata(address(_underlying)).decimals() returns (uint8 value) {
-            return value;
-        } catch {
-            return super.decimals();
-        }
-    }
-
     /**
      * @dev Allow a user to deposit underlying tokens and mint the corresponding number of wrapped tokens.
      */
     function depositFor(address account, uint256 value) public override returns (bool) {
         address sender = _msgSender();
-        if (sender == address(this)) {
-            revert ERC20InvalidSender(address(this));
-        }
-        if (account == address(this)) {
-            revert ERC20InvalidReceiver(account);
-        }
+        if (sender == address(this)) revert ERC20InvalidSender(address(this));
+        if (account == address(this)) revert ERC20InvalidReceiver(account);
         SafeERC20.safeTransferFrom(_underlying, sender, address(this), value);
         _mint(account, value);
         return true;
@@ -123,9 +106,7 @@ contract PermissionedERC20Wrapper is Auth, ERC20, ERC20Wrapper, ERC20Permit {
      * @dev Allow a user to burn a number of wrapped tokens and withdraw the corresponding number of underlying tokens.
      */
     function withdrawTo(address account, uint256 value) public override returns (bool) {
-        if (account == address(this)) {
-            revert ERC20InvalidReceiver(account);
-        }
+        if (account == address(this)) revert ERC20InvalidReceiver(account);
         _burn(_msgSender(), value);
         SafeERC20.safeTransfer(_underlying, account, value);
         return true;
@@ -135,6 +116,14 @@ contract PermissionedERC20Wrapper is Auth, ERC20, ERC20Wrapper, ERC20Permit {
         if (!hasPermission(to)) revert NoPermission(to);
 
         super._update(from, to, value);
+    }
+
+    function decimals() public view virtual override(ERC20, ERC20Wrapper) returns (uint8) {
+        try IERC20Metadata(address(_underlying)).decimals() returns (uint8 value) {
+            return value;
+        } catch {
+            return super.decimals();
+        }
     }
 
     // --- Permission checks ---
@@ -156,19 +145,19 @@ contract PermissionedERC20Wrapper is Auth, ERC20, ERC20Wrapper, ERC20Permit {
 
     function getAttestation(address account, bytes32 schemaUid) public view returns (Attestation memory attestation) {
         bytes32 attestationUid = attestationIndexer.getAttestationUid(account, schemaUid);
-        require(attestationUid != 0, "USDCWrapper: no attestation found");
+        require(attestationUid != 0, "PermissionedERC20Wrapper/no-attestation-found");
         attestation = attestationService.getAttestation(attestationUid);
-        require(attestation.expirationTime == 0, "USDCWrapper: attestation expired");
-        require(attestation.revocationTime == 0, "USDCWrapper: attestation revoked");
+        require(attestation.expirationTime == 0, "PermissionedERC20Wrapper/attestation-expired");
+        require(attestation.revocationTime == 0, "PermissionedERC20Wrapper/attestation-revoked");
     }
 
     // --- Helpers ---
     function recover(address account) public auth returns (uint256) {
-        _recover(account);
+        return _recover(account);
     }
 
     function parseCountryCode(bytes memory data) internal pure returns (string memory) {
-        require(data.length >= 66, "USDCWrapper: invalid attestation data");
+        require(data.length >= 66, "PermissionedERC20Wrapper/invalid-attestation-data");
         // Country code is two bytes long and begins at the 65th byte
         bytes memory countryBytes = new bytes(2);
         for (uint256 i = 0; i < 2; i++) {

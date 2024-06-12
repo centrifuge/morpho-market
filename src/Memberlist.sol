@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.21;
 
-import {Auth} from "src/Auth.sol";
+import {Auth} from "lib/liquidity-pools/src/Auth.sol";
 
 contract Memberlist is Auth {
     mapping(address => uint256) public members;
@@ -17,13 +17,13 @@ contract Memberlist is Auth {
 
     // --- Memberlist Management
     function addMember(address member) external auth {
-        require(members[member] == 0, "Memberlist: member already exists");
+        require(members[member] == 0, "Memberlist/member-already-exists");
         members[member] = 1;
         emit MemberAdded(member);
     }
 
     function removeMember(address member) external auth {
-        require(members[member] == 1, "Memberlist: member does not exist");
+        require(members[member] == 1, "Memberlist/member-does-not-exist");
         members[member] = 0;
         emit MemberRemoved(member);
     }
