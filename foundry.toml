@@ -1,6 +1,16 @@
 [profile.default]
-src = "src"
-out = "out"
-libs = ["lib"]
+src = 'src'
+out = 'out'
+libs = ['lib']
 
-# See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
+solc_version = "0.8.21"
+evm_version = "paris" # to prevent usage of PUSH0, which is not supported on all chains
+
+optimizer = true
+optimizer_runs = 500
+verbosity = 3
+
+
+[profile.ci.fuzz]
+runs = 1000
+max_test_rejects = 1_000_000 # Number of times `vm.assume` can fail
