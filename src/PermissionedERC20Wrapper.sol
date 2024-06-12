@@ -88,21 +88,10 @@ contract PermissionedERC20Wrapper is Auth, ERC20, ERC20Wrapper, ERC20Permit {
         if (what == "indexer") attestationIndexer = IAttestationIndexer(data);
         else if (what == "service") attestationService = IAttestationService(data);
         else if (what == "memberlist") memberlist = Memberlist(data);
-        else revert("USDCWrapper/file-unrecognized-param");
+        else revert("PermissionedERC20Wrapper/file-unrecognized-param");
     }
 
     // --- ERC20 wrapping ---
-    /**
-     * @dev See {ERC20-decimals}.
-     */
-    function decimals() public view virtual override(ERC20, ERC20Wrapper) returns (uint8) {
-        try IERC20Metadata(address(_underlying)).decimals() returns (uint8 value) {
-            return value;
-        } catch {
-            return super.decimals();
-        }
-    }
-
     /**
      * @dev Allow a user to deposit underlying tokens and mint the corresponding number of wrapped tokens.
      */
@@ -137,6 +126,14 @@ contract PermissionedERC20Wrapper is Auth, ERC20, ERC20Wrapper, ERC20Permit {
         super._update(from, to, value);
     }
 
+    function decimals() public view virtual override(ERC20, ERC20Wrapper) returns (uint8) {
+        try IERC20Metadata(address(_underlying)).decimals() returns (uint8 value) {
+            return value;
+        } catch {
+            return super.decimals();
+        }
+    }
+
     // --- Permission checks ---
     function hasPermission(address account) public view returns (bool attested) {
         if (
@@ -156,10 +153,10 @@ contract PermissionedERC20Wrapper is Auth, ERC20, ERC20Wrapper, ERC20Permit {
 
     function getAttestation(address account, bytes32 schemaUid) public view returns (Attestation memory attestation) {
         bytes32 attestationUid = attestationIndexer.getAttestationUid(account, schemaUid);
-        require(attestationUid != 0, "USDCWrapper: no attestation found");
+        require(attestationUid != 0, "PermissionedERC20Wrapper/no-attestation-found");
         attestation = attestationService.getAttestation(attestationUid);
-        require(attestation.expirationTime == 0, "USDCWrapper: attestation expired");
-        require(attestation.revocationTime == 0, "USDCWrapper: attestation revoked");
+        require(attestation.expirationTime == 0, "PermissionedERC20Wrapper/attestation-expired");
+        require(attestation.revocationTime == 0, "PermissionedERC20Wrapper/attestation-revoked");
     }
 
     // --- Helpers ---
@@ -168,7 +165,7 @@ contract PermissionedERC20Wrapper is Auth, ERC20, ERC20Wrapper, ERC20Permit {
     }
 
     function parseCountryCode(bytes memory data) internal pure returns (string memory) {
-        require(data.length >= 66, "USDCWrapper: invalid attestation data");
+        require(data.length >= 66, "PermissionedERC20Wrapper/invalid-attestation-data");
         // Country code is two bytes long and begins at the 65th byte
         bytes memory countryBytes = new bytes(2);
         for (uint256 i = 0; i < 2; i++) {

@@ -64,17 +64,17 @@ contract PermissionedERC20WrapperTest is Test {
     }
 
     function test_HasPermission_WithoutAttestation_Fails() public {
-        vm.expectRevert("USDCWrapper: no attestation found");
+        vm.expectRevert("PermissionedERC20Wrapper/no-attestation-found");
         bool hasPermissionNoAttestation = wrappedUSDC.hasPermission(userNoAttestation);
     }
 
     function test_HasPermission_WithOnlyVerifiedAccountAttestation_Fails() public {
-        vm.expectRevert("USDCWrapper: no attestation found");
+        vm.expectRevert("PermissionedERC20Wrapper/no-attestation-found");
         bool hasPermissionVerifiedAccount = wrappedUSDC.hasPermission(userVerifiedAccount);
     }
 
     function test_HasPermission_WithRevokedVerifiedAccountAttestation_Fails() public {
-        vm.expectRevert("USDCWrapper: attestation revoked");
+        vm.expectRevert("PermissionedERC20Wrapper/attestation-revoked");
         bool hasPermissionVerifiedAccountRevoked = wrappedUSDC.hasPermission(userVerifiedAccountRevoked);
     }
 
@@ -87,7 +87,7 @@ contract PermissionedERC20WrapperTest is Test {
     function test_HasPermission_WithRemovedMemberlistUser_Fails() public {
         memberlist.addMember(userNoAttestation);
         memberlist.removeMember(userNoAttestation);
-        vm.expectRevert("USDCWrapper: no attestation found");
+        vm.expectRevert("PermissionedERC20Wrapper/no-attestation-found");
         bool hasPermissionRemovedMemberlist = wrappedUSDC.hasPermission(userNoAttestation);
     }
 
