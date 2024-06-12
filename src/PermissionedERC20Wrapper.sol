@@ -4,7 +4,6 @@ pragma solidity ^0.8.20;
 import {Memberlist} from "src/Memberlist.sol";
 import {Auth} from "lib/liquidity-pools/src/Auth.sol";
 import {ERC20PermissionedBase, IERC20} from "lib/erc20-permissioned/src/ERC20PermissionedBase.sol";
-import {IERC20Metadata} from "lib/openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 interface IAttestationService {
     function getAttestation(bytes32 uid) external view returns (Attestation memory);

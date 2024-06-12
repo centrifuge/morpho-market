@@ -1,7 +1,7 @@
 # Morpho Market
 
 Contracts required for the real-world asset (RWA) Morpho market. Two main features:
-* `PermissionedERC20Wrapper`: an ERC20 wrapper that can be minted and transferred only to accounts that hold verified account and non-US verified country attestations, or have been manually added to the memberlist. This extends the `ERC20Wrapper` abstract contract from OpenZeppelin to adapt to the ERC20-wrapper bundler from Morpho.
+* `PermissionedERC20Wrapper`: an ERC20 wrapper that can be minted and transferred only to accounts that hold verified account and non-US verified country attestations, or have been manually added to the memberlist. This extends the `erc20-permissioned` abstract contract from Morpho.
 * `VaultOracle`: Morpho-compatible oracle for ERC4626 vaults.
 
 ## Developing
