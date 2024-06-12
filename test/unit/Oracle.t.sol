@@ -13,18 +13,18 @@ contract OracleTest is Test {
     function setUp() public {}
 
     function test_Deploy(uint8 assetDecimals, uint8 shareDecimals) public {
-        vm.assume(assetDecimals <= 54 && assetDecimals > 0);
-        vm.assume(shareDecimals <= 54 && shareDecimals > 0);
+        vm.assume(assetDecimals < 36 && assetDecimals > 0);
+        vm.assume(shareDecimals < 36 && shareDecimals > 0);
         deployOracle(1, assetDecimals, shareDecimals);
     }
 
     function test_File(uint8 assetDecimals, uint8 shareDecimals, uint8 assetDecimalsNew, uint8 shareDecimalsNew)
         public
     {
-        vm.assume(assetDecimals <= 54 && assetDecimals > 0);
-        vm.assume(shareDecimals <= 54 && shareDecimals > 0);
-        vm.assume(assetDecimalsNew <= 54 && assetDecimalsNew > 0);
-        vm.assume(shareDecimalsNew <= 54 && shareDecimalsNew > 0);
+        vm.assume(assetDecimals < 36 && assetDecimals > 0);
+        vm.assume(shareDecimals < 36 && shareDecimals > 0);
+        vm.assume(assetDecimalsNew < 36 && assetDecimalsNew > 0);
+        vm.assume(shareDecimalsNew < 36 && shareDecimalsNew > 0);
         deployOracle(1, assetDecimals, shareDecimals);
 
         // update vault
@@ -32,8 +32,8 @@ contract OracleTest is Test {
         oracle.file("vault", address(vaultNew));
         assertEq(Auth(oracle).wards(address(this)), 1);
         assert(address(oracle.vault()) == address(vaultNew));
-        assertEq(oracle.assetDecimals(), assetDecimalsNew);
-        assertEq(oracle.shareDecimals(), shareDecimalsNew);
+        assertEq(oracle.assetScaling(), 10 ** (36 - assetDecimalsNew));
+        assertEq(oracle.singleShare(), 10 ** shareDecimalsNew);
         // fail to file unknown param
         vm.expectRevert("VaultOracle/file-unrecognized-param");
         oracle.file("random", address(vaultNew));
@@ -44,8 +44,8 @@ contract OracleTest is Test {
     }
 
     function test_Price(uint256 price, uint8 assetDecimals, uint8 shareDecimals) public {
-        vm.assume(assetDecimals <= 54 && assetDecimals > 0);
-        vm.assume(shareDecimals <= 54 && shareDecimals > 0);
+        vm.assume(assetDecimals < 36 && assetDecimals > 0);
+        vm.assume(shareDecimals < 36 && shareDecimals > 0);
         vm.assume(price < 1000);
         deployOracle(price, assetDecimals, shareDecimals);
         uint256 oraclePrice = oracle.price();
@@ -60,7 +60,7 @@ contract OracleTest is Test {
         assertEq(Auth(oracle).wards(address(this)), 1);
         // assert state
         assert(address(oracle.vault()) == address(vault));
-        assertEq(oracle.assetDecimals(), assetDecimals);
-        assertEq(oracle.shareDecimals(), shareDecimals);
+        assertEq(oracle.assetScaling(), 10 ** (36 - assetDecimals));
+        assertEq(oracle.singleShare(), 10 ** shareDecimals);
     }
 }
