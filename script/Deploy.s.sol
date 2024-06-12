@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 
 import {Script} from "forge-std/Script.sol";
 import {Memberlist} from "src/Memberlist.sol";
-import {PermissionedERC20Wrapper, IERC20} from "src/PermissionedERC20Wrapper.sol";
+import {PermissionedERC20Wrapper, IERC20Metadata} from "src/PermissionedERC20Wrapper.sol";
 
 contract DeployScript is Script {
     address USDC = vm.envAddress("UNDERLYING_TOKEN");
@@ -21,7 +21,7 @@ contract DeployScript is Script {
         PermissionedERC20Wrapper wrappedUSDC = new PermissionedERC20Wrapper(
             "Attested USDC",
             "aUSDC",
-            IERC20(USDC),
+            IERC20Metadata(USDC),
             morpho,
             bundler,
             attestationService,
