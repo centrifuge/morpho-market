@@ -1,0 +1,57 @@
+name: "CI"
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+env:
+  FOUNDRY_PROFILE: ci
+
+jobs:
+  test-unit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Run tests
+        run: forge test --no-match-path "test/integration/**/*.sol" --fork-url https://mainnet.base.org
+        env:
+          FOUNDRY_PROFILE: ci
+          FORK_TESTS: false
+
+  test-integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Run tests
+        run: forge test --match-path "test/integration/**/*.sol"
+        env:
+          FOUNDRY_PROFILE: ci
+          FORK_TESTS: false
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Build contracts
+        run: |
+          forge --version
+          forge build --sizes
+
+      - name: Check formatting
+        run: forge fmt --check
+        env:
+          FOUNDRY_PROFILE: ci
