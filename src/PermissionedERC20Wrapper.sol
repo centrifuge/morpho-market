@@ -43,6 +43,8 @@ contract PermissionedERC20Wrapper is Auth, ERC20PermissionedBase {
     IAttestationService public attestationService;
     IAttestationIndexer public attestationIndexer;
 
+    event File(bytes32 indexed what, address data);
+
     constructor(
         string memory name_,
         string memory symbol_,
@@ -67,6 +69,7 @@ contract PermissionedERC20Wrapper is Auth, ERC20PermissionedBase {
         else if (what == "service") attestationService = IAttestationService(data);
         else if (what == "memberlist") memberlist = Memberlist(data);
         else revert("PermissionedERC20Wrapper/file-unrecognized-param");
+        emit File(what, data);
     }
 
     // --- Permission checks ---
@@ -93,6 +96,9 @@ contract PermissionedERC20Wrapper is Auth, ERC20PermissionedBase {
 
     // --- Helpers ---
     function recover(address account) public auth returns (uint256) {
+        if (account == address(this)) {
+            revert ERC20InvalidReceiver(account);
+        }
         return _recover(account);
     }
 
