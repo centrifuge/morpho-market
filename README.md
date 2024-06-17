@@ -18,5 +18,11 @@ To run all tests locally, where `[FORK_URL]` is a valid RPC endpoint for Base:
 forge test --fork-url [FORK_URL]
 ```
 
+## Audit reports
+
+| Auditor | Report link |
+|---|---|
+| Cantina Managed | [`June 2024`](https://github.com/centrifuge/morpho-market/blob/main/audits/2023-06-cantina.pdf) |
+
 ## License
 This codebase is licensed under [GNU Lesser General Public License v3.0](https://github.com/centrifuge/liquidity-pools/blob/main/LICENSE).

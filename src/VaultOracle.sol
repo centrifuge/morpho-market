@@ -5,7 +5,7 @@ import {IOracle} from "src/interfaces/IOracle.sol";
 import {Auth} from "lib/liquidity-pools/src/Auth.sol";
 import {IERC20Metadata} from "lib/openzeppelin-contracts/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
-interface IERC4626 {
+interface IERC7575 {
     function share() external view returns (address share);
     function asset() external view returns (address asset);
     function convertToAssets(uint256 shares) external view returns (uint256 assets);
@@ -14,7 +14,7 @@ interface IERC4626 {
 contract VaultOracle is Auth, IOracle {
     uint8 public constant PRICE_DECIMALS = 36;
 
-    IERC4626 public vault;
+    IERC7575 public vault;
     uint256 public singleShare;
     uint256 public assetScaling;
 
@@ -39,7 +39,7 @@ contract VaultOracle is Auth, IOracle {
     }
 
     function _updateVault(address vault_) internal {
-        vault = IERC4626(vault_);
+        vault = IERC7575(vault_);
 
         uint8 shareDecimals = IERC20Metadata(vault.share()).decimals();
         require(shareDecimals < PRICE_DECIMALS, "VaultOracle/share-decimals-too-high");
